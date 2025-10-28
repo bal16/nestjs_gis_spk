@@ -6,9 +6,11 @@ import { PrismaService } from '../infra/database/prisma.service';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async getOneByEmail(email: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({
-      where: { email },
+  async getOneByEmailOrName(input: string): Promise<User | null> {
+    return await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: input }, { name: input }],
+      },
     });
   }
 }

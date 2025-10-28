@@ -1,8 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { LoginDTO } from './dto/login.dto';
+import {
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
+import * as bcrypt from 'bcrypt';
+
 import type { User } from '../../generated/prisma';
+import { LoginDTO } from './dto/login.dto';
+
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AuthService {
@@ -12,13 +18,23 @@ export class AuthService {
   ) {}
 
   async validate(input: LoginDTO) {
-    const user = await this.userService.getOneByEmail(input.email);
+    const user = await this.userService.getOneByEmailOrName(input.email);
+
     if (!user) {
       throw new UnauthorizedException();
     }
-    if (user.password !== input.password) {
+
+    const isPasswordValid = await this.comparePassword(
+      input.password,
+      user.password,
+    );
+
+    console.log(isPasswordValid);
+
+    if (!isPasswordValid) {
       throw new UnauthorizedException();
     }
+
     return user;
   }
 
@@ -34,6 +50,14 @@ export class AuthService {
       username: user.name,
       id: user.id,
     };
+  }
+
+  async comparePassword(password: string, hash: string) {
+    return bcrypt.compare(password, hash);
+  }
+
+  async hashPassword(password: string) {
+    return bcrypt.hash(password, 10);
   }
 
   async authenticate(input: LoginDTO) {
