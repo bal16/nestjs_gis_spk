@@ -29,6 +29,7 @@
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
+    "@paralleldrive/cuid2": "^3.0.4",
     "@prisma/client": "^6.18.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
