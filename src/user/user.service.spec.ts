@@ -36,9 +36,9 @@ describe('UserService', () => {
   });
 
   it('should get a user by email', async () => {
-    mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+    mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
 
-    const result = await service.getOneByEmail('test@mail.co');
+    const result = await service.getOneByEmailOrName('test@mail.co');
 
     expect(result).toBe(mockUser);
   });

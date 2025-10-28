@@ -18,7 +18,7 @@ describe('AuthService', () => {
     id: 'cuid',
     name: 'test-user',
     email: 'test@mail.co',
-    password: 'hashed-password',
+    password: '$2a$12$IOMRUtt534W9u8wEl5TBm.iSJZZ3GPcnG.wtJi/jfdDRgGwlbtTXm',
     isAdmin: false,
     avatar: 'avatar.jpg',
   };
@@ -49,7 +49,7 @@ describe('AuthService', () => {
 
   describe('[method] validate', () => {
     it('should validate a user', async () => {
-      mockUserService.getOneByEmail.mockResolvedValue(mockUser);
+      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
 
       const result = await service.validate(loginTestUser);
 
@@ -62,7 +62,7 @@ describe('AuthService', () => {
     });
 
     it('should throw an error if user is not found', async () => {
-      mockUserService.getOneByEmail.mockResolvedValue(null);
+      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
 
       await expect(service.validate(loginTestUser)).rejects.toBeInstanceOf(
         UnauthorizedException,
@@ -70,7 +70,7 @@ describe('AuthService', () => {
     });
 
     it('should throw an error if password is incorrect', async () => {
-      mockUserService.getOneByEmail.mockResolvedValue({
+      mockUserService.getOneByEmailOrName.mockResolvedValue({
         ...mockUser,
         password: 'wrong-password',
       });
@@ -99,7 +99,7 @@ describe('AuthService', () => {
   describe('[method] authenticate', () => {
     it('should authenticate a user', async () => {
       mockJwtService.signAsync.mockResolvedValue('token');
-      mockUserService.getOneByEmail.mockResolvedValue(mockUser);
+      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
 
       const result = await service.authenticate(loginTestUser);
 
