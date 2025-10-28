@@ -9,6 +9,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post()
   login(@Body() LoginDTO: LoginDTO) {
-    return this.authService.validate(LoginDTO);
+    return this.authService.authenticate(LoginDTO);
   }
 }
