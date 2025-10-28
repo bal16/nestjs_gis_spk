@@ -20,6 +20,6 @@ model User {
   name     String  @unique
   email    String  @unique
   password String
-  avatar   String
+  avatar   String? @db.Text
   isAdmin  Boolean @default(false)
 }
