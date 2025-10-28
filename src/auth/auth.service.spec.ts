@@ -53,6 +53,11 @@ describe('AuthService', () => {
 
     const result = await service.validate(loginTestUser);
 
+    expect(result).toHaveProperty('id');
+    expect(result).toHaveProperty('name');
+    expect(result).toHaveProperty('email');
+    expect(result).toHaveProperty('password');
+
     expect(result).toBe(mockUser);
   });
 
@@ -63,6 +68,10 @@ describe('AuthService', () => {
     expect(result).toHaveProperty('access_token');
     expect(result).toHaveProperty('username');
     expect(result).toHaveProperty('id');
+
+    expect(result.username).toBe(mockUser.name);
+    expect(result.id).toBe(mockUser.id);
+    expect(result.access_token).toBe('token');
   });
 
   it('should authenticate a user', async () => {
@@ -74,5 +83,9 @@ describe('AuthService', () => {
     expect(result).toHaveProperty('access_token');
     expect(result).toHaveProperty('username');
     expect(result).toHaveProperty('id');
+
+    expect(result.username).toBe(mockUser.name);
+    expect(result.id).toBe(mockUser.id);
+    expect(result.access_token).toBe('token');
   });
 });
