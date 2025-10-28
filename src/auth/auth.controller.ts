@@ -8,7 +8,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post()
-  create(@Body() LoginDTO: LoginDTO) {
+  login(@Body() LoginDTO: LoginDTO) {
     return this.authService.validate(LoginDTO);
   }
 }
