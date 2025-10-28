@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 
 import type { User } from '../../generated/prisma';
@@ -15,13 +16,16 @@ import type {
 
 import { UserService } from '../user/user.service';
 import { createId } from '@paralleldrive/cuid2';
-import type { IResponse } from 'src/type';
+import type { IResponse } from '../type';
+import type { EnvironmentVariables } from '../env';
+import type { JwtPayload } from './dto/jwt.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService<EnvironmentVariables>,
   ) {}
 
   async validate(input: LoginDTO) {
@@ -43,16 +47,22 @@ export class AuthService {
     return user;
   }
 
-  async signIn(user: User) {
-    const payload = {
+  async signIn(user: User): Promise<LoginResponse> {
+    const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       admin: user.isAdmin,
     };
-    const token = await this.jwtService.signAsync(payload);
+
+    const secret = this.configService.get<string>('JWT_SECRET', {
+      infer: true,
+    });
+
+    const token = await this.jwtService.signAsync(payload, { secret });
+
     return {
       access_token: token,
-      username: user.name,
+      username: user.email,
       id: user.id,
     };
   }
