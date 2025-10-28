@@ -1,14 +1,21 @@
 import {
   Injectable,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import type { User } from '../../generated/prisma';
-import { LoginDTO } from './dto/login.dto';
+import { LoginDTO, type LoginResponse } from './dto/login.dto';
+import type {
+  RegistrationDTO,
+  RegistrationResponse,
+} from './dto/registeration.dto';
 
 import { UserService } from '../user/user.service';
+import { createId } from '@paralleldrive/cuid2';
+import type { IResponse } from 'src/type';
 
 @Injectable()
 export class AuthService {
@@ -28,8 +35,6 @@ export class AuthService {
       input.password,
       user.password,
     );
-
-    console.log(isPasswordValid);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException();
@@ -60,8 +65,46 @@ export class AuthService {
     return bcrypt.hash(password, 10);
   }
 
-  async authenticate(input: LoginDTO) {
+  async authenticate(input: LoginDTO): Promise<IResponse<LoginResponse>> {
     const user = await this.validate(input);
-    return await this.signIn(user);
+    const data = await this.signIn(user);
+
+    return {
+      message: 'success',
+      statusCode: 200,
+      data,
+    };
+  }
+
+  async register(
+    input: RegistrationDTO,
+  ): Promise<IResponse<RegistrationResponse>> {
+    const user = await this.userService.getOneByEmailOrName(input.email);
+
+    if (user) {
+      throw new BadRequestException();
+    }
+
+    const id = createId();
+    const hashedPassword = await this.hashPassword(input.password);
+
+    await this.userService.create({
+      ...input,
+      id,
+      password: hashedPassword,
+      name: input.username,
+      isAdmin: false,
+      avatar: input.avatar || null,
+    });
+
+    return {
+      message: 'success',
+      statusCode: 201,
+      data: {
+        id,
+        username: input.username,
+        email: input.email,
+      },
+    };
   }
 }
