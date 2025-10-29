@@ -143,36 +143,44 @@ export class AuthService {
         },
       );
 
+      const user = await this.userService.getOneByEmailOrName(payload.email);
+
+      if (!user || !user.token || user.token !== refreshToken) {
+        throw new UnauthorizedException();
+      }
+
       const secret = this.configService.get<string>('JWT_SECRET', {
         infer: true,
       });
 
-      const token = await this.jwtService.signAsync(payload, { secret });
+      const newPayload: JwtPayload = {
+        sub: user.id,
+        email: user.email,
+        admin: user.isAdmin,
+      };
 
-      const newRefreshToken = await this.jwtService.signAsync(payload, {
+      const token = await this.jwtService.signAsync(newPayload, { secret });
+
+      const newRefreshToken = await this.jwtService.signAsync(newPayload, {
         secret: refreshSecret,
         expiresIn: '7d',
       });
 
-      try {
-        const user = await this.userService.update({
-          id: payload.sub,
-          token: newRefreshToken,
-        });
+      await this.userService.update({
+        id: payload.sub,
+        token: newRefreshToken,
+      });
 
-        return {
-          statusCode: 200,
-          message: 'success',
-          data: {
-            access_token: token,
-            refresh_token: newRefreshToken,
-            username: user.name as string,
-            id: payload.sub,
-          },
-        };
-      } catch {
-        throw new UnauthorizedException();
-      }
+      return {
+        statusCode: 200,
+        message: 'success',
+        data: {
+          access_token: token,
+          refresh_token: newRefreshToken,
+          username: user.name,
+          id: payload.sub,
+        },
+      };
     } catch {
       throw new UnauthorizedException();
     }

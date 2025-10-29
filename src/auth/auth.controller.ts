@@ -9,8 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import type { LoginDTO } from './dto/login.dto';
-import type { RegistrationDTO } from './dto/registeration.dto';
+import { LoginDTO } from './dto/login.dto';
+import { RegistrationDTO } from './dto/registeration.dto';
 import type { Request } from 'express';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 
