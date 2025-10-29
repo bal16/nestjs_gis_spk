@@ -4,6 +4,8 @@ import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { RefreshTokenGuard } from './strategies/refreshToken.guard';
+import type { Request } from 'express';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
@@ -14,6 +16,7 @@ jest.mock('@paralleldrive/cuid2', () => ({
 describe('AuthController', () => {
   let controller: AuthController;
   let mockAuthService: DeepMockProxy<AuthService>;
+  let mockRefreshTokenGuard: DeepMockProxy<RefreshTokenGuard>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -22,22 +25,32 @@ describe('AuthController', () => {
     })
       .overrideProvider(AuthService)
       .useValue(mockDeep<AuthService>())
+      .overrideGuard(RefreshTokenGuard)
+      .useValue(mockDeep<RefreshTokenGuard>)
       .compile();
 
-    controller = module.get<AuthController>(AuthController);
+    controller = module.get(AuthController);
     mockAuthService = module.get(AuthService);
+    mockRefreshTokenGuard = module.get(RefreshTokenGuard);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
+  it('should allow access and call service when guard passes', async () => {});
+
   describe('[method] login (POST /login)', () => {
     it('should return a user with token', async () => {
       mockAuthService.authenticate.mockResolvedValue({
         message: 'success',
         statusCode: 200,
-        data: { id: 'cuid', access_token: 'token', username: 'test-user' },
+        data: {
+          id: 'cuid',
+          access_token: 'token',
+          username: 'test-user',
+          refresh_token: 'refresh-token',
+        },
       });
 
       const result = await controller.login({
@@ -79,6 +92,38 @@ describe('AuthController', () => {
 
       expect(result.data.id).toBe('cuid');
       expect(result.data.email).toBe('test@mail.co');
+      expect(result.data.username).toBe('test-user');
+    });
+  });
+
+  describe('[method] refresh (GET /refresh)', () => {
+    it('should return a user with new access token', async () => {
+      mockRefreshTokenGuard.canActivate?.mockResolvedValue(true);
+      mockAuthService.refresh.mockResolvedValue({
+        message: 'success',
+        statusCode: 200,
+        data: {
+          id: 'cuid',
+          access_token: 'new-token',
+          refresh_token: 'new-refresh-token',
+          username: 'test-user',
+        },
+      });
+
+      const mockReq = {
+        headers: {
+          authorization: 'Bearer old-refresh-token',
+        },
+      } as unknown as Request;
+
+      const result = await controller.refresh(mockReq);
+
+      expect(result).toHaveProperty('data.id', 'cuid');
+      expect(result).toHaveProperty('data.access_token', 'new-token');
+      expect(result).toHaveProperty('data.refresh_token', 'new-refresh-token');
+      expect(result).toHaveProperty('data.username', 'test-user');
+      expect(result.data.id).toBe('cuid');
+      expect(result.data.access_token).toBe('new-token');
       expect(result.data.username).toBe('test-user');
     });
   });

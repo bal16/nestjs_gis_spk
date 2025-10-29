@@ -160,45 +160,77 @@ describe('AuthService', () => {
 
   describe('[method] refresh', () => {
     it('should refresh a user token', async () => {
+      const oldRefreshToken = 'old-refresh-token';
+      const newAccessToken = 'new-access-token';
+      const newRefreshToken = 'new-refresh-token';
+
       mockJwtService.verifyAsync.mockResolvedValue({
         sub: 'cuid',
         email: 'test@mail.co',
         admin: false,
       });
-      mockJwtService.signAsync.mockResolvedValue('token');
+
+      mockUserService.getOneByEmailOrName.mockResolvedValue({
+        ...mockUser,
+        token: oldRefreshToken,
+      });
+
+      // First call for new access token, second for new refresh token
+      mockJwtService.signAsync
+        .mockResolvedValueOnce(newAccessToken)
+        .mockResolvedValueOnce(newRefreshToken);
+
       mockUserService.update.mockResolvedValue(mockUser);
 
-      const result = await service.refresh('token');
+      const result = await service.refresh(oldRefreshToken);
 
       expect(result).toHaveProperty('data.access_token');
       expect(result).toHaveProperty('data.refresh_token');
       expect(result).toHaveProperty('data.username');
       expect(result).toHaveProperty('data.id');
 
-      expect(result.data.access_token).toBe('token');
-      expect(result.data.refresh_token).toBe('token');
+      expect(result.data.access_token).toBe(newAccessToken);
+      expect(result.data.refresh_token).toBe(newRefreshToken);
       expect(result.data.username).toBe(mockUser.name);
-      expect(result.data.id).toBe(mockUser.id);
+      expect(result.data.id).toBe('cuid');
     });
 
-    it('should throw an error if token is invalid', async () => {
+    it('should throw an UnauthorizedException if token verification fails', async () => {
       mockJwtService.verifyAsync.mockRejectedValue(new Error());
 
-      await expect(service.refresh('token')).rejects.toBeInstanceOf(
+      await expect(service.refresh('invalid-token')).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
 
-    it('should throw an error if user is not found', async () => {
+    it('should throw an UnauthorizedException if user is not found', async () => {
       mockJwtService.verifyAsync.mockResolvedValue({
         sub: 'cuid',
         email: 'test@mail.co',
         admin: false,
       });
+      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
 
-      mockUserService.update.mockRejectedValue(null);
+      await expect(service.refresh('some-token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
 
-      await expect(service.refresh('token')).rejects.toBeInstanceOf(
+    it('should throw an UnauthorizedException if stored token does not match', async () => {
+      const incomingToken = 'incoming-refresh-token';
+      const storedToken = 'different-stored-token';
+
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: 'cuid',
+        email: 'test@mail.co',
+        admin: false,
+      });
+      mockUserService.getOneByEmailOrName.mockResolvedValue({
+        ...mockUser,
+        token: storedToken,
+      });
+
+      await expect(service.refresh(incomingToken)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
