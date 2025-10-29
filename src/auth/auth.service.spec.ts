@@ -7,9 +7,10 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 
-import type { User } from '../../generated/prisma';
-import type { LoginDTO } from './dto/login.dto';
-import type { RegistrationDTO } from './dto/registeration.dto';
+import { User } from '../../generated/prisma';
+import { LoginDTO } from './dto/login.dto';
+import { RegistrationDTO } from './dto/registeration.dto';
+import { ConfigService } from '@nestjs/config';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
@@ -28,6 +29,7 @@ describe('AuthService', () => {
     email: 'test@mail.co',
     password: '$2a$12$IOMRUtt534W9u8wEl5TBm.iSJZZ3GPcnG.wtJi/jfdDRgGwlbtTXm',
     isAdmin: false,
+    token: null,
     avatar: 'avatar.jpg',
   };
 
@@ -44,12 +46,12 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService, UserService, JwtService],
+      providers: [AuthService, UserService, JwtService, ConfigService],
     })
-      .overrideProvider(JwtService)
-      .useValue(mockDeep<JwtService>())
       .overrideProvider(UserService)
       .useValue(mockDeep<UserService>())
+      .overrideProvider(JwtService)
+      .useValue(mockDeep<JwtService>())
       .compile();
 
     service = module.get<AuthService>(AuthService);
@@ -152,6 +154,52 @@ describe('AuthService', () => {
 
       await expect(service.register(RegisterTestUser)).rejects.toBeInstanceOf(
         BadRequestException,
+      );
+    });
+  });
+
+  describe('[method] refresh', () => {
+    it('should refresh a user token', async () => {
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: 'cuid',
+        email: 'test@mail.co',
+        admin: false,
+      });
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockUserService.update.mockResolvedValue(mockUser);
+
+      const result = await service.refresh('token');
+
+      expect(result).toHaveProperty('data.access_token');
+      expect(result).toHaveProperty('data.refresh_token');
+      expect(result).toHaveProperty('data.username');
+      expect(result).toHaveProperty('data.id');
+
+      expect(result.data.access_token).toBe('token');
+      expect(result.data.refresh_token).toBe('token');
+      expect(result.data.username).toBe(mockUser.name);
+      expect(result.data.id).toBe(mockUser.id);
+    });
+
+    it('should throw an error if token is invalid', async () => {
+      mockJwtService.verifyAsync.mockRejectedValue(new Error());
+
+      await expect(service.refresh('token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw an error if user is not found', async () => {
+      mockJwtService.verifyAsync.mockResolvedValue({
+        sub: 'cuid',
+        email: 'test@mail.co',
+        admin: false,
+      });
+
+      mockUserService.update.mockRejectedValue(null);
+
+      await expect(service.refresh('token')).rejects.toBeInstanceOf(
+        UnauthorizedException,
       );
     });
   });

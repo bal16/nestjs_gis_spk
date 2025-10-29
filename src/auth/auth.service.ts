@@ -7,18 +7,15 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 
-import type { User } from '../../generated/prisma';
+import { User } from '../../generated/prisma';
 import { LoginDTO, type LoginResponse } from './dto/login.dto';
-import type {
-  RegistrationDTO,
-  RegistrationResponse,
-} from './dto/registeration.dto';
+import { RegistrationDTO, RegistrationResponse } from './dto/registeration.dto';
 
 import { UserService } from '../user/user.service';
 import { createId } from '@paralleldrive/cuid2';
-import type { IResponse } from '../type';
-import type { EnvironmentVariables } from '../env';
-import type { JwtPayload } from './dto/jwt.dto';
+import { IResponse } from '../type';
+import { EnvironmentVariables } from '../env';
+import { JwtPayload } from './dto/jwt.dto';
 
 @Injectable()
 export class AuthService {
@@ -76,7 +73,7 @@ export class AuthService {
     return {
       access_token: token,
       refresh_token: refreshToken,
-      username: user.email,
+      username: user.name,
       id: user.id,
     };
   }
@@ -157,21 +154,25 @@ export class AuthService {
         expiresIn: '7d',
       });
 
-      await this.userService.update({
-        id: payload.sub,
-        token: newRefreshToken,
-      });
-
-      return {
-        statusCode: 200,
-        message: 'success',
-        data: {
-          access_token: token,
-          refresh_token: newRefreshToken,
-          username: payload.email,
+      try {
+        const user = await this.userService.update({
           id: payload.sub,
-        },
-      };
+          token: newRefreshToken,
+        });
+
+        return {
+          statusCode: 200,
+          message: 'success',
+          data: {
+            access_token: token,
+            refresh_token: newRefreshToken,
+            username: user.name as string,
+            id: payload.sub,
+          },
+        };
+      } catch {
+        throw new UnauthorizedException();
+      }
     } catch {
       throw new UnauthorizedException();
     }
