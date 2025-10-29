@@ -58,10 +58,24 @@ export class AuthService {
       infer: true,
     });
 
+    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET', {
+      infer: true,
+    });
+
     const token = await this.jwtService.signAsync(payload, { secret });
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: refreshSecret,
+      expiresIn: '7d',
+    });
+
+    await this.userService.update({
+      id: user.id,
+      token: refreshToken,
+    });
 
     return {
       access_token: token,
+      refresh_token: refreshToken,
       username: user.email,
       id: user.id,
     };
@@ -105,6 +119,7 @@ export class AuthService {
       name: input.username,
       isAdmin: false,
       avatar: input.avatar || null,
+      token: null,
     });
 
     return {
@@ -116,5 +131,49 @@ export class AuthService {
         email: input.email,
       },
     };
+  }
+
+  async refresh(refreshToken: string): Promise<IResponse<LoginResponse>> {
+    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET', {
+      infer: true,
+    });
+
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+        refreshToken,
+        {
+          secret: refreshSecret,
+        },
+      );
+
+      const secret = this.configService.get<string>('JWT_SECRET', {
+        infer: true,
+      });
+
+      const token = await this.jwtService.signAsync(payload, { secret });
+
+      const newRefreshToken = await this.jwtService.signAsync(payload, {
+        secret: refreshSecret,
+        expiresIn: '7d',
+      });
+
+      await this.userService.update({
+        id: payload.sub,
+        token: newRefreshToken,
+      });
+
+      return {
+        statusCode: 200,
+        message: 'success',
+        data: {
+          access_token: token,
+          refresh_token: newRefreshToken,
+          username: payload.email,
+          id: payload.sub,
+        },
+      };
+    } catch {
+      throw new UnauthorizedException();
+    }
   }
 }

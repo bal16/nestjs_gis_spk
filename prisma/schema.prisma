@@ -22,4 +22,5 @@ model User {
   password String
   avatar   String? @db.Text
   isAdmin  Boolean @default(false)
+  token    String?
 }

@@ -1,8 +1,18 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Get,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { LoginDTO } from './dto/login.dto';
 import type { RegistrationDTO } from './dto/registeration.dto';
 import type { Request } from 'express';
+import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -18,5 +28,15 @@ export class AuthController {
   @Post('register')
   async register(@Body() RegistrationDTO: RegistrationDTO) {
     return await this.authService.register(RegistrationDTO);
+  }
+
+  @UseGuards(RefreshTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('refresh')
+  async refresh(@Req() request: Request) {
+    const authorization = request.headers.authorization;
+    const token = authorization?.split(' ')[1];
+
+    return await this.authService.refresh(token!);
   }
 }

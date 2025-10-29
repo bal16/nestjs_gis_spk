@@ -19,4 +19,13 @@ export class UserService {
       data: user,
     });
   }
+
+  async update(user: User | Partial<User>): Promise<User | Partial<User>> {
+    return await this.prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: user,
+    });
+  }
 }

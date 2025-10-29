@@ -13,6 +13,7 @@ export class LoginDTO {
 
 export type LoginResponse = {
   access_token: string;
+  refresh_token: string;
   username: string;
   id: string;
 };
