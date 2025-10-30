@@ -69,4 +69,14 @@ describe('UserService', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('[method] create', () => {
+    it('should create a new user', async () => {
+      mockPrismaService.user.create.mockResolvedValue(mockUser);
+
+      const result = await service.create(mockUser);
+
+      expect(result).toEqual(mockUser);
+    });
+  });
 });
