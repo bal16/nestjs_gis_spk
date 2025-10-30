@@ -250,4 +250,20 @@ describe('AuthService', () => {
       );
     });
   });
+
+  describe('[method] logout', () => {
+    it('should log out a user by clearing their refresh token', async () => {
+      const userId = 'cuid';
+
+      mockUserService.update.mockResolvedValue({ ...mockUser, token: null });
+
+      const result = await service.logout(userId);
+
+      expect(result).toEqual({
+        statusCode: 200,
+        message: 'success',
+        data: null,
+      });
+    });
+  });
 });
