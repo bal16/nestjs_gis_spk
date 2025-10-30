@@ -40,11 +40,12 @@ export class UserService {
   }
 
   async update(user: User | Partial<User>): Promise<User | Partial<User>> {
+    const { id, ...rest } = user;
     return await this.prisma.user.update({
       where: {
-        id: user.id,
+        id,
       },
-      data: user,
+      data: rest,
     });
   }
 }
