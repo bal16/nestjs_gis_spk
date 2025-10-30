@@ -7,11 +7,11 @@ import {
   Get,
   Req,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
-import type { Request } from 'express';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 import { AccessTokenGuard } from './strategies/accessToken.guard';
 import type { CustomRequest } from '../type';
@@ -51,5 +51,14 @@ export class AuthController {
     const { email } = request.user;
 
     return await this.authService.getSession(email);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Delete('session')
+  async logout(@Req() request: CustomRequest) {
+    const { sub } = request.user;
+
+    return await this.authService.logout(sub);
   }
 }
