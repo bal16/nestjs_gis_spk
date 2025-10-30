@@ -79,4 +79,17 @@ describe('UserService', () => {
       expect(result).toEqual(mockUser);
     });
   });
+
+  describe('[method] update', () => {
+    it('should update a user', async () => {
+      const updatePayload = { id: mockUser.id, name: 'updated-name' };
+      const updatedUser = { ...mockUser, name: 'updated-name' };
+
+      mockPrismaService.user.update.mockResolvedValue(updatedUser);
+
+      const result = await service.update(updatePayload);
+
+      expect(result).toEqual(updatedUser);
+    });
+  });
 });
