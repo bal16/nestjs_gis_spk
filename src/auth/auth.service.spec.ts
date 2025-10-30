@@ -235,4 +235,80 @@ describe('AuthService', () => {
       );
     });
   });
+
+  describe('[method] getSession', () => {
+    it('should return user data for a valid session token', async () => {
+      const token = 'valid-token';
+      const payload = { email: mockUser.email };
+
+      mockJwtService.verifyAsync.mockResolvedValue(payload);
+      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
+
+      const result = await service.getSession(token);
+
+      expect(result).toEqual({
+        statusCode: 200,
+        message: 'success',
+        data: mockUser,
+      });
+    });
+
+    it('should throw UnauthorizedException if token is invalid', async () => {
+      const token = 'invalid-token';
+      mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
+
+      await expect(service.getSession(token)).rejects.toThrow(
+        new Error('Invalid token'),
+      );
+    });
+
+    it('should throw UnauthorizedException if user is not found', async () => {
+      const token = 'valid-token-no-user';
+      const payload = { email: 'no-user@mail.co' };
+
+      mockJwtService.verifyAsync.mockResolvedValue(payload);
+      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
+
+      await expect(service.getSession(token)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  describe('[method] getSession', () => {
+    it('should return user data for a valid session token', async () => {
+      const token = 'valid-token';
+      const payload = { email: mockUser.email };
+
+      mockJwtService.verifyAsync.mockResolvedValue(payload);
+      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
+
+      const result = await service.getSession(token);
+
+      expect(result).toEqual({
+        statusCode: 200,
+        message: 'success',
+        data: mockUser,
+      });
+    });
+
+    it('should throw an error if token is invalid', async () => {
+      const token = 'invalid-token';
+      mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
+
+      await expect(service.getSession(token)).rejects.toThrow('Invalid token');
+    });
+
+    it('should throw UnauthorizedException if user is not found', async () => {
+      const token = 'valid-token-no-user';
+      const payload = { email: 'no-user@mail.co' };
+
+      mockJwtService.verifyAsync.mockResolvedValue(payload);
+      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
+
+      await expect(service.getSession(token)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+    });
+  });
 });

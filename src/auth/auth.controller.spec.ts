@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
+import type { Request } from 'express';
 // import { createId } from '@paralleldrive/cuid2';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
-import type { Request } from 'express';
+import { AccessTokenGuard } from './strategies/accessToken.guard';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
@@ -17,6 +18,7 @@ describe('AuthController', () => {
   let controller: AuthController;
   let mockAuthService: DeepMockProxy<AuthService>;
   let mockRefreshTokenGuard: DeepMockProxy<RefreshTokenGuard>;
+  let mockAccessTokenGuard: DeepMockProxy<AccessTokenGuard>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,11 +29,14 @@ describe('AuthController', () => {
       .useValue(mockDeep<AuthService>())
       .overrideGuard(RefreshTokenGuard)
       .useValue(mockDeep<RefreshTokenGuard>)
+      .overrideGuard(AccessTokenGuard)
+      .useValue(mockDeep<AccessTokenGuard>)
       .compile();
 
     controller = module.get(AuthController);
     mockAuthService = module.get(AuthService);
     mockRefreshTokenGuard = module.get(RefreshTokenGuard);
+    mockAccessTokenGuard = module.get(AccessTokenGuard);
   });
 
   it('should be defined', () => {
@@ -125,6 +130,36 @@ describe('AuthController', () => {
       expect(result.data.id).toBe('cuid');
       expect(result.data.access_token).toBe('new-token');
       expect(result.data.username).toBe('test-user');
+    });
+  });
+
+  describe('[method] getMe (GET /me)', () => {
+    it('should return user session data', async () => {
+      const mockSessionData = {
+        statusCode: 200,
+        message: 'success',
+        data: {
+          id: 'cuid',
+          name: 'test-user',
+          email: 'test@mail.co',
+        },
+      };
+
+      mockAccessTokenGuard.canActivate?.mockResolvedValue(true);
+      mockAuthService.getSession.mockResolvedValue(mockSessionData);
+
+      const mockReq = {
+        headers: {
+          authorization: 'Bearer some-access-token',
+        },
+      } as unknown as Request;
+
+      const result = await controller.getMe(mockReq);
+
+      expect(result).toEqual(mockSessionData);
+      expect(result.data).toHaveProperty('id', 'cuid');
+      expect(result.data).toHaveProperty('name', 'test-user');
+      expect(result.data).toHaveProperty('email', 'test@mail.co');
     });
   });
 });
