@@ -7,8 +7,8 @@ import {
 
 import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
-import type { ConfigService } from '@nestjs/config';
-import type { EnvironmentVariables } from 'src/env';
+import { ConfigService } from '@nestjs/config';
+import { EnvironmentVariables } from '../../env';
 import type { JwtPayload } from '../dto/jwt.dto';
 
 @Injectable()
