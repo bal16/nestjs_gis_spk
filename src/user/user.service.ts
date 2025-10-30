@@ -6,11 +6,30 @@ import { PrismaService } from '../infra/database/prisma.service';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async getOneByEmailOrName(input: string): Promise<User | null> {
+  async getOneByEmailOrName(
+    input: string,
+    credentials: boolean = true,
+  ): Promise<User | Partial<User> | null> {
+    const select = {
+      id: true,
+      name: true,
+      email: true,
+      avatar: true,
+      isAdmin: true,
+      token: true,
+      password: true,
+    };
+
+    if (!credentials) {
+      select.password = false;
+      select.token = false;
+    }
+
     return await this.prisma.user.findFirst({
       where: {
         OR: [{ email: input }, { name: input }],
       },
+      select,
     });
   }
 
