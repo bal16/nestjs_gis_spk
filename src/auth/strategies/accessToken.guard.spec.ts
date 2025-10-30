@@ -5,7 +5,6 @@ import { ConfigService } from '@nestjs/config';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { AccessTokenGuard } from './accessToken.guard';
 import { JwtPayload } from '../dto/jwt.dto';
-import type { Request } from 'express';
 
 describe('AccessTokenGuard', () => {
   let guard: AccessTokenGuard;
