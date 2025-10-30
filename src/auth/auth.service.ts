@@ -136,40 +136,21 @@ export class AuthService {
     });
 
     try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+      const { email } = await this.jwtService.verifyAsync<JwtPayload>(
         refreshToken,
         {
           secret: refreshSecret,
         },
       );
 
-      const user = await this.userService.getOneByEmailOrName(payload.email);
+      const user = await this.userService.getOneByEmailOrName(email);
 
       if (!user || !user.token || user.token !== refreshToken) {
         throw new UnauthorizedException();
       }
 
-      const secret = this.configService.get<string>('JWT_SECRET', {
-        infer: true,
-      });
-
-      const newPayload: JwtPayload = {
-        sub: user.id,
-        email: user.email,
-        admin: user.isAdmin,
-      };
-
-      const token = await this.jwtService.signAsync(newPayload, { secret });
-
-      const newRefreshToken = await this.jwtService.signAsync(newPayload, {
-        secret: refreshSecret,
-        expiresIn: '7d',
-      });
-
-      await this.userService.update({
-        id: payload.sub,
-        token: newRefreshToken,
-      });
+      const { access_token: token, refresh_token: newRefreshToken } =
+        await this.signIn(user);
 
       return {
         statusCode: 200,
@@ -178,7 +159,7 @@ export class AuthService {
           access_token: token,
           refresh_token: newRefreshToken,
           username: user.name,
-          id: payload.sub,
+          id: user.id,
         },
       };
     } catch {
