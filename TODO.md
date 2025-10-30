@@ -8,23 +8,24 @@
 ## RECENT
 
 [ ] Auth Feature <br/>
-[x] Login API (POST /auth/login) <br/>
-[x] | Controller <br/>
-[x] | Service <br/>
-[x] | Test <br/>
-[x] Registration API (POST /auth/register)) <br/>
-[x] | Controller <br/>
-[x] | Service <br/>
-[x] | Test <br/>
-[x] Refresh API (GET /auth/refresh) <br/>
-[x] | Controller <br/>
-[x] | Service <br/>
-[x] | Test <br/>
-[x] CurrentUser API (GET /auth/me) <br/>
-[x] | Controller <br/>
-[x] | Service <br/>
-[x] | Test <br/>
-[ ] Logout API (DELETE /auth/sessiom) <br/>
-[ ] | Controller <br/>
-[ ] | Service <br/>
-[ ] | Test <br/>
+[x] |Login API (POST /auth/login) <br/>
+[x] || Controller <br/>
+[x] || Service <br/>
+[x] || Test <br/>
+[x] |Registration API (POST /auth/register)) <br/>
+[x] || Controller <br/>
+[x] || Service <br/>
+[x] || Test <br/>
+[x] |Refresh API (GET /auth/refresh) <br/>
+[x] || Controller <br/>
+[x] || Service <br/>
+[x] || Test <br/>
+[x] |CurrentUser API (GET /auth/me) <br/>
+[x] || Controller <br/>
+[x] || Service <br/>
+[x] || Test <br/>
+[x] |Logout API (DELETE /auth/sessiom) <br/>
+[x] || Controller <br/>
+[x] || Service <br/>
+[x] || Test <br/>
+[ ] |E2E Test
