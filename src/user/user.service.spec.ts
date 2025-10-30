@@ -13,6 +13,7 @@ describe('UserService', () => {
     name: 'test-user',
     email: 'test@mail.co',
     password: 'hashed-password',
+    token: null,
     isAdmin: false,
     avatar: 'avatar.jpg',
   };
@@ -35,11 +36,37 @@ describe('UserService', () => {
     expect(mockPrismaService).toBeDefined();
   });
 
-  it('should get a user by email', async () => {
-    mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+  describe('[method] getOneByEmailOrName', () => {
+    it('should get a user by email and exclude credentials by default', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
 
-    const result = await service.getOneByEmailOrName('test@mail.co');
+      const result = await service.getOneByEmailOrName('test@mail.co');
 
-    expect(result).toBe(mockUser);
+      expect(result).toBe(mockUser);
+    });
+
+    it('should get a user by name and exclude credentials when specified', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+
+      const result = await service.getOneByEmailOrName('test-user', true);
+
+      expect(result).toBe(mockUser);
+    });
+
+    it('should get a user by email and include credentials when specified', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+
+      const result = await service.getOneByEmailOrName('test@mail.co', false);
+
+      expect(result).toBe(mockUser);
+    });
+
+    it('should return null if no user is found', async () => {
+      mockPrismaService.user.findFirst.mockResolvedValue(null);
+
+      const result = await service.getOneByEmailOrName('nonexistent@mail.co');
+
+      expect(result).toBeNull();
+    });
   });
 });
