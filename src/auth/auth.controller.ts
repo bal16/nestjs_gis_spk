@@ -13,6 +13,7 @@ import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import type { Request } from 'express';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
+import { AccessTokenGuard } from './strategies/accessToken.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -38,5 +39,15 @@ export class AuthController {
     const token = authorization?.split(' ')[1];
 
     return await this.authService.refresh(token!);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('me')
+  async getMe(@Req() request: Request) {
+    const authorization = request.headers.authorization;
+    const token = authorization?.split(' ')[1];
+
+    return await this.authService.getSession(token!);
   }
 }
