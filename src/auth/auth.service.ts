@@ -170,4 +170,17 @@ export class AuthService {
       data: user,
     };
   }
+
+  async logout(id: string): Promise<IResponse<null>> {
+    await this.userService.update({
+      id,
+      token: null,
+    });
+
+    return {
+      statusCode: 200,
+      message: 'success',
+      data: null,
+    };
+  }
 }
