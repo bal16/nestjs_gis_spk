@@ -132,52 +132,32 @@ export class AuthService {
     };
   }
 
-  async refresh(refreshToken: string): Promise<IResponse<LoginResponse>> {
-    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET', {
-      infer: true,
-    });
+  async refresh(
+    refreshToken: string,
+    email: string,
+  ): Promise<IResponse<LoginResponse>> {
+    const user = (await this.userService.getOneByEmailOrName(email)) as User;
 
-    try {
-      const { email } = await this.jwtService.verifyAsync<JwtPayload>(
-        refreshToken,
-        {
-          secret: refreshSecret,
-        },
-      );
-
-      const user = (await this.userService.getOneByEmailOrName(email)) as User;
-
-      if (!user || !user.token || user.token !== refreshToken) {
-        throw new UnauthorizedException();
-      }
-
-      const { access_token: token, refresh_token: newRefreshToken } =
-        await this.signIn(user);
-
-      return {
-        statusCode: 200,
-        message: 'success',
-        data: {
-          access_token: token,
-          refresh_token: newRefreshToken,
-          username: user.name,
-          id: user.id,
-        },
-      };
-    } catch {
+    if (!user || !user.token || user.token !== refreshToken) {
       throw new UnauthorizedException();
     }
+
+    const { access_token: token, refresh_token: newRefreshToken } =
+      await this.signIn(user);
+
+    return {
+      statusCode: 200,
+      message: 'success',
+      data: {
+        access_token: token,
+        refresh_token: newRefreshToken,
+        username: user.name,
+        id: user.id,
+      },
+    };
   }
 
-  async getSession(token: string): Promise<IResponse<Partial<User>>> {
-    const secret = this.configService.get<string>('JWT_SECRET', {
-      infer: true,
-    });
-
-    const { email } = await this.jwtService.verifyAsync<JwtPayload>(token, {
-      secret,
-    });
-
+  async getSession(email: string): Promise<IResponse<Partial<User>>> {
     const user = await this.userService.getOneByEmailOrName(email, false);
 
     if (!user) {

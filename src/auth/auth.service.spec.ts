@@ -160,29 +160,24 @@ describe('AuthService', () => {
 
   describe('[method] refresh', () => {
     it('should refresh a user token', async () => {
-      const oldRefreshToken = 'old-refresh-token';
+      const refreshToken = 'valid-refresh-token';
+      const userEmail = 'test@mail.co';
       const newAccessToken = 'new-access-token';
       const newRefreshToken = 'new-refresh-token';
 
-      mockJwtService.verifyAsync.mockResolvedValue({
-        sub: 'cuid',
-        email: 'test@mail.co',
-        admin: false,
-      });
-
       mockUserService.getOneByEmailOrName.mockResolvedValue({
         ...mockUser,
-        token: oldRefreshToken,
+        token: refreshToken,
       });
 
-      // First call for new access token, second for new refresh token
+      // Mocking the signIn method which is called internally by refresh
       mockJwtService.signAsync
         .mockResolvedValueOnce(newAccessToken)
         .mockResolvedValueOnce(newRefreshToken);
 
       mockUserService.update.mockResolvedValue(mockUser);
 
-      const result = await service.refresh(oldRefreshToken);
+      const result = await service.refresh(refreshToken, userEmail);
 
       expect(result).toHaveProperty('data.access_token');
       expect(result).toHaveProperty('data.refresh_token');
@@ -192,26 +187,16 @@ describe('AuthService', () => {
       expect(result.data.access_token).toBe(newAccessToken);
       expect(result.data.refresh_token).toBe(newRefreshToken);
       expect(result.data.username).toBe(mockUser.name);
-      expect(result.data.id).toBe('cuid');
-    });
-
-    it('should throw an UnauthorizedException if token verification fails', async () => {
-      mockJwtService.verifyAsync.mockRejectedValue(new Error());
-
-      await expect(service.refresh('invalid-token')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      expect(result.data.id).toBe(mockUser.id);
     });
 
     it('should throw an UnauthorizedException if user is not found', async () => {
-      mockJwtService.verifyAsync.mockResolvedValue({
-        sub: 'cuid',
-        email: 'test@mail.co',
-        admin: false,
-      });
+      const refreshToken = 'some-token';
+      const userEmail = 'nonexistent@mail.co';
+
       mockUserService.getOneByEmailOrName.mockResolvedValue(null);
 
-      await expect(service.refresh('some-token')).rejects.toBeInstanceOf(
+      await expect(service.refresh(refreshToken, userEmail)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -219,32 +204,35 @@ describe('AuthService', () => {
     it('should throw an UnauthorizedException if stored token does not match', async () => {
       const incomingToken = 'incoming-refresh-token';
       const storedToken = 'different-stored-token';
+      const userEmail = 'test@mail.co';
 
-      mockJwtService.verifyAsync.mockResolvedValue({
-        sub: 'cuid',
-        email: 'test@mail.co',
-        admin: false,
-      });
       mockUserService.getOneByEmailOrName.mockResolvedValue({
         ...mockUser,
         token: storedToken,
       });
 
-      await expect(service.refresh(incomingToken)).rejects.toBeInstanceOf(
+      await expect(service.refresh(incomingToken, userEmail)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+
+    it('should throw an UnauthorizedException if user has no token stored', async () => {
+      mockUserService.getOneByEmailOrName.mockResolvedValue({
+        ...mockUser,
+        token: null,
+      });
+
+      await expect(
+        service.refresh('some-token', mockUser.email),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('[method] getSession', () => {
-    it('should return user data for a valid session token', async () => {
-      const token = 'valid-token';
-      const payload = { email: mockUser.email };
-
-      mockJwtService.verifyAsync.mockResolvedValue(payload);
+    it('should return user data for a valid email', async () => {
       mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
 
-      const result = await service.getSession(token);
+      const result = await service.getSession(mockUser.email);
 
       expect(result).toEqual({
         statusCode: 200,
@@ -253,60 +241,11 @@ describe('AuthService', () => {
       });
     });
 
-    it('should throw UnauthorizedException if token is invalid', async () => {
-      const token = 'invalid-token';
-      mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
-
-      await expect(service.getSession(token)).rejects.toThrow(
-        new Error('Invalid token'),
-      );
-    });
-
     it('should throw UnauthorizedException if user is not found', async () => {
-      const token = 'valid-token-no-user';
-      const payload = { email: 'no-user@mail.co' };
-
-      mockJwtService.verifyAsync.mockResolvedValue(payload);
+      const email = 'no-user@mail.co';
       mockUserService.getOneByEmailOrName.mockResolvedValue(null);
 
-      await expect(service.getSession(token)).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
-    });
-  });
-
-  describe('[method] getSession', () => {
-    it('should return user data for a valid session token', async () => {
-      const token = 'valid-token';
-      const payload = { email: mockUser.email };
-
-      mockJwtService.verifyAsync.mockResolvedValue(payload);
-      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
-
-      const result = await service.getSession(token);
-
-      expect(result).toEqual({
-        statusCode: 200,
-        message: 'success',
-        data: mockUser,
-      });
-    });
-
-    it('should throw an error if token is invalid', async () => {
-      const token = 'invalid-token';
-      mockJwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
-
-      await expect(service.getSession(token)).rejects.toThrow('Invalid token');
-    });
-
-    it('should throw UnauthorizedException if user is not found', async () => {
-      const token = 'valid-token-no-user';
-      const payload = { email: 'no-user@mail.co' };
-
-      mockJwtService.verifyAsync.mockResolvedValue(payload);
-      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
-
-      await expect(service.getSession(token)).rejects.toBeInstanceOf(
+      await expect(service.getSession(email)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });

@@ -14,6 +14,11 @@ import { RegistrationDTO } from './dto/registeration.dto';
 import type { Request } from 'express';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 import { AccessTokenGuard } from './strategies/accessToken.guard';
+import type { JwtPayload } from './dto/jwt.dto';
+
+interface CustomRequest extends Request {
+  user: JwtPayload;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -34,20 +39,21 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @HttpCode(HttpStatus.OK)
   @Get('refresh')
-  async refresh(@Req() request: Request) {
-    const authorization = request.headers.authorization;
-    const token = authorization?.split(' ')[1];
+  async refresh(@Req() request: CustomRequest) {
+    const authorization = request.headers.authorization!;
+    const token = authorization.split(' ')[1];
 
-    return await this.authService.refresh(token!);
+    const { email } = request.user;
+
+    return await this.authService.refresh(token, email);
   }
 
   @UseGuards(AccessTokenGuard)
   @HttpCode(HttpStatus.OK)
   @Get('me')
-  async getMe(@Req() request: Request) {
-    const authorization = request.headers.authorization;
-    const token = authorization?.split(' ')[1];
+  async getMe(@Req() request: CustomRequest) {
+    const { email } = request.user;
 
-    return await this.authService.getSession(token!);
+    return await this.authService.getSession(email);
   }
 }
