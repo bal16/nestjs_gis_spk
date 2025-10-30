@@ -165,4 +165,27 @@ describe('AuthController', () => {
       expect(result.data).toHaveProperty('email', 'test@mail.co');
     });
   });
+
+  describe('[method] logout (DELETE /session)', () => {
+    it('should call authService.logout with the user id from the request', async () => {
+      const mockResponse = {
+        statusCode: 200,
+        message: 'success',
+        data: null,
+      };
+      mockAuthService.logout.mockResolvedValue(mockResponse);
+
+      const mockReq = {
+        user: {
+          sub: 'cuid',
+          email: 'test@mail.co',
+          admin: false,
+        },
+      } as unknown as CustomRequest;
+
+      const result = await controller.logout(mockReq);
+
+      expect(result).toEqual(mockResponse);
+    });
+  });
 });
