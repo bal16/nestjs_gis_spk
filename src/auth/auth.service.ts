@@ -110,9 +110,9 @@ export class AuthService {
     const hashedPassword = await this.hashPassword(input.password);
 
     await this.userService.create({
-      ...input,
       id,
       password: hashedPassword,
+      email: input.email,
       name: input.username,
       isAdmin: false,
       avatar: input.avatar || null,
