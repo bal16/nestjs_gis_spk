@@ -26,7 +26,9 @@ export class AuthService {
   ) {}
 
   async validate(input: LoginDTO) {
-    const user = await this.userService.getOneByEmailOrName(input.email);
+    const user = (await this.userService.getOneByEmailOrName(
+      input.email,
+    )) as User;
 
     if (!user) {
       throw new UnauthorizedException();
@@ -143,7 +145,7 @@ export class AuthService {
         },
       );
 
-      const user = await this.userService.getOneByEmailOrName(email);
+      const user = (await this.userService.getOneByEmailOrName(email)) as User;
 
       if (!user || !user.token || user.token !== refreshToken) {
         throw new UnauthorizedException();
@@ -165,5 +167,27 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException();
     }
+  }
+
+  async getSession(token: string): Promise<IResponse<Partial<User>>> {
+    const secret = this.configService.get<string>('JWT_SECRET', {
+      infer: true,
+    });
+
+    const { email } = await this.jwtService.verifyAsync<JwtPayload>(token, {
+      secret,
+    });
+
+    const user = await this.userService.getOneByEmailOrName(email, false);
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    return {
+      statusCode: 200,
+      message: 'success',
+      data: user,
+    };
   }
 }
