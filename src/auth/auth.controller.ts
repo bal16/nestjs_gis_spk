@@ -14,11 +14,7 @@ import { RegistrationDTO } from './dto/registeration.dto';
 import type { Request } from 'express';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 import { AccessTokenGuard } from './strategies/accessToken.guard';
-import type { JwtPayload } from './dto/jwt.dto';
-
-interface CustomRequest extends Request {
-  user: JwtPayload;
-}
+import type { CustomRequest } from '../type';
 
 @Controller('auth')
 export class AuthController {

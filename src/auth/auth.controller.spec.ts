@@ -1,18 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
-import type { Request } from 'express';
-// import { createId } from '@paralleldrive/cuid2';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 import { AccessTokenGuard } from './strategies/accessToken.guard';
+import type { CustomRequest } from 'src/type';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
 }));
-
-// const mockedCreateId = createId as jest.Mock;
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -119,7 +116,10 @@ describe('AuthController', () => {
         headers: {
           authorization: 'Bearer old-refresh-token',
         },
-      } as unknown as Request;
+        user: {
+          email: 'test@mail.co',
+        },
+      } as unknown as CustomRequest;
 
       const result = await controller.refresh(mockReq);
 
@@ -152,7 +152,10 @@ describe('AuthController', () => {
         headers: {
           authorization: 'Bearer some-access-token',
         },
-      } as unknown as Request;
+        user: {
+          email: 'test@mail.co',
+        },
+      } as unknown as CustomRequest;
 
       const result = await controller.getMe(mockReq);
 
