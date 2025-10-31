@@ -26,7 +26,7 @@ export class AccessTokenGuard implements CanActivate {
     const token = authorization?.split(' ')[1];
 
     if (!token) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid token');
     }
 
     try {
@@ -41,7 +41,7 @@ export class AccessTokenGuard implements CanActivate {
 
       return true;
     } catch {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid token');
     }
   }
 }

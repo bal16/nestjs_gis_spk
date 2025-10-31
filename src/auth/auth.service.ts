@@ -31,7 +31,7 @@ export class AuthService {
     )) as User;
 
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await this.comparePassword(
@@ -40,7 +40,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     return user;
@@ -105,7 +105,7 @@ export class AuthService {
     const user = await this.userService.getOneByEmailOrName(input.email);
 
     if (user) {
-      throw new BadRequestException();
+      throw new BadRequestException('User already exists');
     }
 
     const id = createId();
@@ -161,7 +161,7 @@ export class AuthService {
     const user = await this.userService.getOneByEmailOrName(email, false);
 
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     return {
