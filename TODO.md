@@ -1,31 +1,31 @@
 # TODO
 
-## NEW!
+## NEW
 
-[x] accessToken.guard.spec.ts errors
-[ ] cause guard startegies is similar why not use one and add variants?
+- [x] accessToken.guard.spec.ts errors
+- [ ] cause guard startegies is similar why not use one and add variants?
 
 ## RECENT
 
-[ ] Auth Feature <br/>
-[x] |Login API (POST /auth/login) <br/>
-[x] || Controller <br/>
-[x] || Service <br/>
-[x] || Test <br/>
-[x] |Registration API (POST /auth/register)) <br/>
-[x] || Controller <br/>
-[x] || Service <br/>
-[x] || Test <br/>
-[x] |Refresh API (GET /auth/refresh) <br/>
-[x] || Controller <br/>
-[x] || Service <br/>
-[x] || Test <br/>
-[x] |CurrentUser API (GET /auth/me) <br/>
-[x] || Controller <br/>
-[x] || Service <br/>
-[x] || Test <br/>
-[x] |Logout API (DELETE /auth/sessiom) <br/>
-[x] || Controller <br/>
-[x] || Service <br/>
-[x] || Test <br/>
-[ ] |E2E Test
+- [ ] Auth Feature
+  - [x] Login API (POST /auth/login)
+    - [x] Controller
+    - [x] Service
+    - [x] Test
+  - [x] Registration API (POST /auth/register)
+    - [x] Controller
+    - [x] Service
+    - [x] Test
+  - [x] Refresh API (GET /auth/refresh)
+    - [x] Controller
+    - [x] Service
+    - [x] Test
+  - [x] CurrentUser API (GET /auth/me)
+    - [x] Controller
+    - [x] Service
+    - [x] Test
+  - [x] Logout API (DELETE /auth/sessiom)
+    - [x] Controller
+    - [x] Service
+    - [x] Test
+  - [x] E2E Test
