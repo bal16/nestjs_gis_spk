@@ -1,16 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { createId } from '@paralleldrive/cuid2';
 
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 
-import { User } from '../../generated/prisma';
+import { HashService } from './hash.service';
+import { User } from 'generated/prisma';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import { ConfigService } from '@nestjs/config';
+import { createId } from '@paralleldrive/cuid2';
+import { LoginUser } from './entities/login.entity';
+import { RegisteredUser } from './entities/register.entity';
+import { CurrentUser } from './entities/current.entity';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
@@ -22,6 +26,8 @@ describe('AuthService', () => {
   let service: AuthService;
   let mockJwtService: DeepMockProxy<JwtService>;
   let mockUserService: DeepMockProxy<UserService>;
+  let mockHashService: DeepMockProxy<HashService>;
+  let mockConfigService: DeepMockProxy<ConfigService>;
 
   const mockUser: User = {
     id: 'cuid',
@@ -35,28 +41,40 @@ describe('AuthService', () => {
 
   const loginTestUser: LoginDTO = {
     email: 'test@mail.co',
-    password: 'hashed-password',
+    password: 'password123',
   };
 
   const RegisterTestUser: RegistrationDTO = {
     email: 'test@mail.co',
     username: 'test-user',
-    password: 'hashed-password',
+    password: 'password123',
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService, UserService, JwtService, ConfigService],
+      providers: [
+        AuthService,
+        UserService,
+        JwtService,
+        ConfigService,
+        HashService,
+      ],
     })
       .overrideProvider(UserService)
       .useValue(mockDeep<UserService>())
       .overrideProvider(JwtService)
       .useValue(mockDeep<JwtService>())
+      .overrideProvider(HashService)
+      .useValue(mockDeep<HashService>())
+      .overrideProvider(ConfigService)
+      .useValue(mockDeep<ConfigService>())
       .compile();
 
     service = module.get<AuthService>(AuthService);
     mockJwtService = module.get(JwtService);
     mockUserService = module.get(UserService);
+    mockHashService = module.get(HashService);
+    mockConfigService = module.get(ConfigService);
     mockedCreateId.mockReturnValue('id-cuid2-palsu-12345');
   });
 
@@ -64,45 +82,85 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('[method] validate', () => {
+  describe('[method] validateUser', () => {
     it('should validate a user', async () => {
-      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
+      mockUserService.getOne.mockResolvedValue(mockUser);
+      mockHashService.compare.mockResolvedValue(true);
 
-      const result = await service.validate(loginTestUser);
+      const result = await service.validateUser(loginTestUser);
 
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('name');
       expect(result).toHaveProperty('email');
       expect(result).toHaveProperty('password');
 
-      expect(result).toBe(mockUser);
+      expect(result).toEqual(mockUser);
     });
 
     it('should throw an error if user is not found', async () => {
-      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
+      mockUserService.getOne.mockResolvedValue(null);
 
-      await expect(service.validate(loginTestUser)).rejects.toBeInstanceOf(
+      await expect(service.validateUser(loginTestUser)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
 
     it('should throw an error if password is incorrect', async () => {
-      mockUserService.getOneByEmailOrName.mockResolvedValue({
+      // Arrange
+      mockUserService.getOne.mockResolvedValue({
         ...mockUser,
-        password: 'wrong-password',
       });
-
-      await expect(service.validate(loginTestUser)).rejects.toBeInstanceOf(
+      mockHashService.compare.mockResolvedValue(false);
+      // Act & Assert
+      await expect(service.validateUser(loginTestUser)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
   });
 
-  describe('[method] signIn', () => {
-    it('should sign in a user', async () => {
-      mockJwtService.signAsync.mockResolvedValue('token');
-      const result = await service.signIn(mockUser);
+  describe('[method] generateToken', () => {
+    it('should generate access and refresh tokens and update user', async () => {
+      const accessToken = 'access-token';
+      const refreshToken = 'refresh-token';
 
+      mockConfigService.get
+        .mockReturnValueOnce('jwt-secret')
+        .mockReturnValueOnce('jwt-refresh-secret');
+
+      mockJwtService.signAsync
+        .mockResolvedValueOnce(accessToken)
+        .mockResolvedValueOnce(refreshToken);
+
+      mockUserService.update.mockResolvedValue({
+        ...mockUser,
+        token: refreshToken,
+      });
+
+      const result = await service.generateToken(mockUser);
+
+      expect(result).toHaveProperty('access_token');
+      expect(result).toHaveProperty('refresh_token');
+      expect(result).toHaveProperty('username');
+      expect(result).toHaveProperty('id');
+
+      expect(result.username).toBe(mockUser.name);
+      expect(result.id).toBe(mockUser.id);
+      expect(result.access_token).toBe(accessToken);
+      expect(result.refresh_token).toBe(refreshToken);
+    });
+  });
+
+  describe('[method] signIn', () => {
+    it('should authenticate a user', async () => {
+      // This test relies on validateUser, so we mock its dependencies
+      mockJwtService.signAsync.mockResolvedValue('token');
+      mockConfigService.get.mockReturnValue('secret');
+      mockUserService.getOne.mockResolvedValue(mockUser);
+      mockHashService.compare.mockResolvedValue(true);
+
+      const result = await service.signIn(loginTestUser);
+
+      expect(result).toBeInstanceOf(LoginUser);
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('username');
       expect(result).toHaveProperty('id');
@@ -111,46 +169,39 @@ describe('AuthService', () => {
       expect(result.id).toBe(mockUser.id);
       expect(result.access_token).toBe('token');
     });
-  });
 
-  describe('[method] authenticate', () => {
-    it('should authenticate a user', async () => {
-      mockJwtService.signAsync.mockResolvedValue('token');
-      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
+    it('should throw UnauthorizedException for invalid credentials', async () => {
+      mockUserService.getOne.mockResolvedValue(null); // Simulate user not found
 
-      const result = await service.authenticate(loginTestUser);
-
-      expect(result).toHaveProperty('data.access_token');
-      expect(result).toHaveProperty('data.username');
-      expect(result).toHaveProperty('data.id');
-
-      expect(result.data.username).toBe(mockUser.name);
-      expect(result.data.id).toBe(mockUser.id);
-      expect(result.data.access_token).toBe('token');
+      await expect(service.signIn(loginTestUser)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
   describe('[method] register', () => {
     it('should register a user', async () => {
+      const hashedPassword = 'hashed-password-from-bcrypt';
       mockUserService.create.mockResolvedValue(mockUser);
+      mockUserService.doseExist.mockResolvedValue(false);
+      mockHashService.hash.mockResolvedValue(hashedPassword);
 
       const result = await service.register({
-        username: 'test-user',
-        email: 'test@mail.co',
-        password: 'hashed-password',
+        ...RegisterTestUser,
       });
 
-      expect(result).toHaveProperty('data.id');
-      expect(result).toHaveProperty('data.username');
-      expect(result).toHaveProperty('data.email');
+      expect(result).toBeInstanceOf(RegisteredUser);
+      expect(result).toHaveProperty('id');
+      expect(result).toHaveProperty('username');
+      expect(result).toHaveProperty('email');
 
-      expect(result.data.id).toBe('id-cuid2-palsu-12345');
-      expect(result.data.username).toBe('test-user');
-      expect(result.data.email).toBe('test@mail.co');
+      expect(result.id).toBe('id-cuid2-palsu-12345');
+      expect(result.username).toBe('test-user');
+      expect(result.email).toBe('test@mail.co');
     });
 
     it('should throw an error if user already exists', async () => {
-      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
+      mockUserService.doseExist.mockResolvedValue(true);
 
       await expect(service.register(RegisterTestUser)).rejects.toBeInstanceOf(
         BadRequestException,
@@ -165,7 +216,11 @@ describe('AuthService', () => {
       const newAccessToken = 'new-access-token';
       const newRefreshToken = 'new-refresh-token';
 
-      mockUserService.getOneByEmailOrName.mockResolvedValue({
+      mockConfigService.get
+        .mockReturnValueOnce('jwt-secret')
+        .mockReturnValueOnce('jwt-refresh-secret');
+
+      mockUserService.getOne.mockResolvedValue({
         ...mockUser,
         token: refreshToken,
       });
@@ -179,22 +234,23 @@ describe('AuthService', () => {
 
       const result = await service.refresh(refreshToken, userEmail);
 
-      expect(result).toHaveProperty('data.access_token');
-      expect(result).toHaveProperty('data.refresh_token');
-      expect(result).toHaveProperty('data.username');
-      expect(result).toHaveProperty('data.id');
+      expect(result).toBeInstanceOf(LoginUser);
+      expect(result).toHaveProperty('access_token');
+      expect(result).toHaveProperty('refresh_token');
+      expect(result).toHaveProperty('username');
+      expect(result).toHaveProperty('id');
 
-      expect(result.data.access_token).toBe(newAccessToken);
-      expect(result.data.refresh_token).toBe(newRefreshToken);
-      expect(result.data.username).toBe(mockUser.name);
-      expect(result.data.id).toBe(mockUser.id);
+      expect(result.access_token).toBe(newAccessToken);
+      expect(result.refresh_token).toBe(newRefreshToken);
+      expect(result.username).toBe(mockUser.name);
+      expect(result.id).toBe(mockUser.id);
     });
 
     it('should throw an UnauthorizedException if user is not found', async () => {
       const refreshToken = 'some-token';
       const userEmail = 'nonexistent@mail.co';
 
-      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
+      mockUserService.getOne.mockResolvedValue(null);
 
       await expect(service.refresh(refreshToken, userEmail)).rejects.toThrow(
         UnauthorizedException,
@@ -206,7 +262,7 @@ describe('AuthService', () => {
       const storedToken = 'different-stored-token';
       const userEmail = 'test@mail.co';
 
-      mockUserService.getOneByEmailOrName.mockResolvedValue({
+      mockUserService.getOne.mockResolvedValue({
         ...mockUser,
         token: storedToken,
       });
@@ -217,7 +273,7 @@ describe('AuthService', () => {
     });
 
     it('should throw an UnauthorizedException if user has no token stored', async () => {
-      mockUserService.getOneByEmailOrName.mockResolvedValue({
+      mockUserService.getOne.mockResolvedValue({
         ...mockUser,
         token: null,
       });
@@ -230,20 +286,29 @@ describe('AuthService', () => {
 
   describe('[method] getSession', () => {
     it('should return user data for a valid email', async () => {
-      mockUserService.getOneByEmailOrName.mockResolvedValue(mockUser);
+      const mockUserWithoutCredentials: Omit<User, 'password' | 'token'> = {
+        id: 'cuid',
+        name: 'test-user',
+        email: 'test@mail.co',
+        isAdmin: false,
+        avatar: 'avatar.jpg',
+      };
 
-      const result = await service.getSession(mockUser.email);
+      mockUserService.getOneWithoutCredentials.mockResolvedValue(
+        mockUserWithoutCredentials,
+      );
 
-      expect(result).toEqual({
-        statusCode: 200,
-        message: 'success',
-        data: mockUser,
-      });
+      const result = await service.getSession(mockUserWithoutCredentials.email);
+
+      expect(result).toBeInstanceOf(CurrentUser);
+      expect(result.id).toBe(mockUser.id);
+      expect(result.name).toBe(mockUser.name);
+      expect(result.email).toBe(mockUser.email);
     });
 
     it('should throw UnauthorizedException if user is not found', async () => {
       const email = 'no-user@mail.co';
-      mockUserService.getOneByEmailOrName.mockResolvedValue(null);
+      mockUserService.getOneWithoutCredentials.mockResolvedValue(null);
 
       await expect(service.getSession(email)).rejects.toBeInstanceOf(
         UnauthorizedException,
@@ -259,11 +324,7 @@ describe('AuthService', () => {
 
       const result = await service.logout(userId);
 
-      expect(result).toEqual({
-        statusCode: 200,
-        message: 'success',
-        data: null,
-      });
+      expect(result).toBeNull();
     });
   });
 });
