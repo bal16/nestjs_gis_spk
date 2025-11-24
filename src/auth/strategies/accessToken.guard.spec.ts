@@ -33,6 +33,7 @@ describe('AccessTokenGuard', () => {
 
   it('should be defined', () => {
     expect(guard).toBeDefined();
+    expect(mockJwtService).toBeDefined();
   });
 
   const createMockExecutionContext = (
