@@ -12,7 +12,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // url      = env("DATABASE_URL") #DEPECRATED
 }
 
 model User {
@@ -20,57 +20,52 @@ model User {
   name     String  @unique
   email    String  @unique
   password String
-  avatar   String? @db.Text
   isAdmin  Boolean @default(false)
   token    String?
 }
 
 model Building {
-  id       String    @id @default(cuid())
-  code     String    @unique
-  name     String    @db.Char(20)
-  location Location?
-  criteria Criteria?
+  id        String @id @default(cuid())
+  code      String @unique
+  name      String @db.Char(20)
+  latitude  Float
+  longitude Float
+  score     Float?
+  priority  Int?
+
+  assessments   Assessment?
+  sawRunDetails SawRunDetail[]
 }
 
-model Location {
-  building_id String   @id
-  building    Building @relation(fields: [building_id], references: [id])
-  longitude   Float    @db.DoublePrecision
-  latitude    Float    @db.DoublePrecision
+model Assessment {
+  id           String @id @default(cuid())
+  buildingId   String @unique
+  age          Int
+  structure    Int
+  architecture Int
+  mep          Int
+  utility      Int
+  damage       Int
+
+  building Building @relation(fields: [buildingId], references: [id])
 }
 
-model Criteria {
-  building_id String   @id
-  building    Building @relation(fields: [building_id], references: [id], onDelete: Cascade)
-  age         Int      @db.Integer
-
-  structure_id   Int?
-  arsitecture_id Int?
-  mep_id         Int?
-  utility_id     Int?
-  damage_id      Int?
-
-  structure   Ref_Condition? @relation("StructureRelation", fields: [structure_id], references: [id], onDelete: SetNull)
-  arsitecture Ref_Condition? @relation("ArsitectureRelation", fields: [arsitecture_id], references: [id], onDelete: SetNull)
-  mep         Ref_Condition? @relation("MepRelation", fields: [mep_id], references: [id], onDelete: SetNull)
-  utility     Ref_Level?     @relation("UtilityRelation", fields: [utility_id], references: [id], onDelete: SetNull)
-  damage      Ref_Level?     @relation("DamageRelation", fields: [damage_id], references: [id], onDelete: SetNull)
+model SawRun {
+  id             String         @id @default(cuid())
+  date           DateTime
+  averageScore   Float?
+  totalBuildings Int?
+  sawRunDetails  SawRunDetail[]
 }
 
-model Ref_Condition {
-  id   Int    @id @default(autoincrement())
-  name String @unique @db.Char(30)
+model SawRunDetail {
+  id         String @id @default(cuid())
+  sawRunId   String
+  buildingId String
+  score      Float
+  priority   Int
+  // detail     String?
 
-  structures   Criteria[] @relation("StructureRelation")
-  arsitectures Criteria[] @relation("ArsitectureRelation")
-  meps         Criteria[] @relation("MepRelation")
-}
-
-model Ref_Level {
-  id   Int    @id @default(autoincrement())
-  name String @unique @db.Char(30)
-
-  utilities Criteria[] @relation("UtilityRelation")
-  damages   Criteria[] @relation("DamageRelation")
+  sawRun   SawRun   @relation(fields: [sawRunId], references: [id])
+  building Building @relation(fields: [buildingId], references: [id])
 }
