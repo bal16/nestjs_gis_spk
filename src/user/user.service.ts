@@ -6,34 +6,42 @@ import { PrismaService } from '../infra/database/prisma.service';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async getOneByEmailOrName(
-    input: string,
-    credentials: boolean = true,
-  ): Promise<User | Partial<User> | null> {
-    const select = {
-      id: true,
-      name: true,
-      email: true,
-      avatar: true,
-      isAdmin: true,
-      token: true,
-      password: true,
-    };
-
-    if (!credentials) {
-      select.password = false;
-      select.token = false;
-    }
-
+  async getOneWithoutCredentials(
+    emailOrName: string,
+  ): Promise<Omit<User, 'password' | 'token'> | null> {
     return await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: input }, { name: input }],
+        OR: [{ email: emailOrName }, { name: emailOrName }],
       },
-      select,
+      omit: {
+        password: true,
+        token: true,
+      },
     });
   }
 
-  async create(user: User): Promise<User | Partial<User>> {
+  async getOne(emailOrName: string): Promise<User | null> {
+    return await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: emailOrName }, { name: emailOrName }],
+      },
+    });
+  }
+
+  async doseExist(emailOrName: string): Promise<boolean> {
+    return Boolean(
+      await this.prisma.user.findFirst({
+        where: {
+          OR: [{ email: emailOrName }, { name: emailOrName }],
+        },
+        select: {
+          id: true,
+        },
+      }),
+    );
+  }
+
+  async create(user: User): Promise<User> {
     return await this.prisma.user.create({
       data: user,
     });
