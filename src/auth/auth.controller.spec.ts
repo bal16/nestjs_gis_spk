@@ -1,11 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
+import { HttpStatus } from '@nestjs/common';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 import { AccessTokenGuard } from './strategies/accessToken.guard';
-import type { CustomRequest } from 'src/type';
+import { LoginDTO } from './dto/login.dto';
+import { RegistrationDTO } from './dto/registeration.dto';
+import { LoginUser } from './entities/login.entity';
+import { RegisteredUser } from './entities/register.entity';
+import { CurrentUser } from './entities/current.entity';
+import { WebResponse } from '../common/responses/web.response';
+import type { CustomRequest } from '../common/type';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
@@ -14,8 +21,6 @@ jest.mock('@paralleldrive/cuid2', () => ({
 describe('AuthController', () => {
   let controller: AuthController;
   let mockAuthService: DeepMockProxy<AuthService>;
-  let mockRefreshTokenGuard: DeepMockProxy<RefreshTokenGuard>;
-  let mockAccessTokenGuard: DeepMockProxy<AccessTokenGuard>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,152 +37,130 @@ describe('AuthController', () => {
 
     controller = module.get(AuthController);
     mockAuthService = module.get(AuthService);
-    mockRefreshTokenGuard = module.get(RefreshTokenGuard);
-    mockAccessTokenGuard = module.get(AccessTokenGuard);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should allow access and call service when guard passes', async () => {});
-
-  describe('[method] login (POST /login)', () => {
+  describe('[POST /auth/login]', () => {
     it('should return a user with token', async () => {
-      mockAuthService.authenticate.mockResolvedValue({
-        message: 'success',
-        statusCode: 200,
-        data: {
-          id: 'cuid',
-          access_token: 'token',
-          username: 'test-user',
-          refresh_token: 'refresh-token',
-        },
-      });
-
-      const result = await controller.login({
+      const loginDto: LoginDTO = {
         email: 'test@mail.co',
-        password: 'hashed-password',
-      });
+        password: 'password123',
+      };
+      const loginUser = new LoginUser(
+        'access-token',
+        'refresh-token',
+        'test-user',
+        'user-id',
+      );
 
-      expect(result).toHaveProperty('data.id');
-      expect(result).toHaveProperty('data.access_token');
-      expect(result).toHaveProperty('data.username');
+      mockAuthService.signIn.mockResolvedValue(loginUser);
 
-      expect(result.data.id).toBe('cuid');
-      expect(result.data.access_token).toBe('token');
-      expect(result.data.username).toBe('test-user');
+      const result = await controller.login(loginDto);
+
+      expect(result).toBeInstanceOf(WebResponse);
+      expect(result.statusCode).toBe(HttpStatus.OK);
+      expect(result.message).toBe('Success');
+      expect(result.data).toEqual(loginUser);
     });
   });
 
-  describe('[method] register (POST /register)', () => {
+  describe('[POST /auth/register]', () => {
     it('should return a user', async () => {
-      mockAuthService.register.mockResolvedValue({
-        message: 'success',
-        statusCode: 200,
-        data: {
-          id: 'cuid',
-          username: 'test-user',
-          email: 'test@mail.co',
-        },
-      });
-
-      const result = await controller.register({
+      const registerDto: RegistrationDTO = {
         email: 'test@mail.co',
-        password: 'hashed-password',
+        password: 'password123',
         username: 'test-user',
-      });
+      };
+      const registeredUser = new RegisteredUser(
+        'user-id',
+        'test-user',
+        'test@mail.co',
+      );
 
-      expect(result).toHaveProperty('data.id');
-      expect(result).toHaveProperty('data.email');
-      expect(result).toHaveProperty('data.username');
+      mockAuthService.register.mockResolvedValue(registeredUser);
 
-      expect(result.data.id).toBe('cuid');
-      expect(result.data.email).toBe('test@mail.co');
-      expect(result.data.username).toBe('test-user');
+      const result = await controller.register(registerDto);
+
+      expect(result).toBeInstanceOf(WebResponse);
+      expect(result.statusCode).toBe(HttpStatus.CREATED);
+      expect(result.message).toBe('User successfully registered');
+      expect(result.data).toEqual(registeredUser);
     });
   });
 
-  describe('[method] refresh (GET /refresh)', () => {
+  describe('[GET /auth/refresh]', () => {
     it('should return a user with new access token', async () => {
-      mockRefreshTokenGuard.canActivate?.mockResolvedValue(true);
-      mockAuthService.refresh.mockResolvedValue({
-        message: 'success',
-        statusCode: 200,
-        data: {
-          id: 'cuid',
-          access_token: 'new-token',
-          refresh_token: 'new-refresh-token',
-          username: 'test-user',
-        },
-      });
+      const newLoginUser = new LoginUser(
+        'new-access-token',
+        'new-refresh-token',
+        'test-user',
+        'user-id',
+      );
 
       const mockReq = {
         headers: {
           authorization: 'Bearer old-refresh-token',
         },
         user: {
+          sub: 'user-id',
           email: 'test@mail.co',
+          admin: false,
         },
       } as unknown as CustomRequest;
 
+      mockAuthService.refresh.mockResolvedValue(newLoginUser);
+
       const result = await controller.refresh(mockReq);
 
-      expect(result).toHaveProperty('data.id', 'cuid');
-      expect(result).toHaveProperty('data.access_token', 'new-token');
-      expect(result).toHaveProperty('data.refresh_token', 'new-refresh-token');
-      expect(result).toHaveProperty('data.username', 'test-user');
-      expect(result.data.id).toBe('cuid');
-      expect(result.data.access_token).toBe('new-token');
-      expect(result.data.username).toBe('test-user');
+      expect(result).toBeInstanceOf(WebResponse);
+      expect(result.statusCode).toBe(HttpStatus.OK);
+      expect(result.message).toBe('Success');
+      expect(result.data).toEqual(newLoginUser);
     });
   });
 
-  describe('[method] getMe (GET /me)', () => {
+  describe('[GET /auth/me]', () => {
     it('should return user session data', async () => {
-      const mockSessionData = {
-        statusCode: 200,
-        message: 'success',
-        data: {
-          id: 'cuid',
-          name: 'test-user',
-          email: 'test@mail.co',
-        },
-      };
-
-      mockAccessTokenGuard.canActivate?.mockResolvedValue(true);
-      mockAuthService.getSession.mockResolvedValue(mockSessionData);
+      const currentUser = new CurrentUser(
+        'user-id',
+        'test-user',
+        'test@mail.co',
+        null,
+        false,
+      );
 
       const mockReq = {
         headers: {
           authorization: 'Bearer some-access-token',
         },
         user: {
+          sub: 'user-id',
           email: 'test@mail.co',
+          admin: false,
         },
       } as unknown as CustomRequest;
 
+      mockAuthService.getSession.mockResolvedValue(currentUser);
+
       const result = await controller.getMe(mockReq);
 
-      expect(result).toEqual(mockSessionData);
-      expect(result.data).toHaveProperty('id', 'cuid');
-      expect(result.data).toHaveProperty('name', 'test-user');
-      expect(result.data).toHaveProperty('email', 'test@mail.co');
+      expect(result).toBeInstanceOf(WebResponse);
+      expect(result.statusCode).toBe(HttpStatus.OK);
+      expect(result.message).toBe('Success');
+      expect(result.data).toEqual(currentUser);
     });
   });
 
-  describe('[method] logout (DELETE /session)', () => {
+  describe('[DELETE /auth/session]', () => {
     it('should call authService.logout with the user id from the request', async () => {
-      const mockResponse = {
-        statusCode: 200,
-        message: 'success',
-        data: null,
-      };
-      mockAuthService.logout.mockResolvedValue(mockResponse);
+      mockAuthService.logout.mockResolvedValue(null);
 
       const mockReq = {
         user: {
-          sub: 'cuid',
+          sub: 'user-id',
           email: 'test@mail.co',
           admin: false,
         },
@@ -185,7 +168,10 @@ describe('AuthController', () => {
 
       const result = await controller.logout(mockReq);
 
-      expect(result).toEqual(mockResponse);
+      expect(result).toBeInstanceOf(WebResponse);
+      expect(result.statusCode).toBe(HttpStatus.OK);
+      expect(result.message).toBe('Success');
+      expect(result.data).toBeNull();
     });
   });
 });
