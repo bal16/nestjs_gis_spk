@@ -3,17 +3,19 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
+import { HashService } from './hash.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
+import { createId } from '@paralleldrive/cuid2';
 
 import { User } from '../../generated/prisma';
-import { LoginDTO, type LoginResponse } from './dto/login.dto';
-import { RegistrationDTO, RegistrationResponse } from './dto/registeration.dto';
+import { LoginDTO } from './dto/login.dto';
+import { RegistrationDTO } from './dto/registeration.dto';
+import { LoginUser } from './entities/login.entity';
+import { RegisteredUser } from './entities/register.entity';
+import { CurrentUser } from './entities/current.entity';
 
 import { UserService } from '../user/user.service';
-import { createId } from '@paralleldrive/cuid2';
-import { IResponse } from '../type';
 import { EnvironmentVariables } from '../env';
 import { JwtPayload } from './dto/jwt.dto';
 
@@ -21,20 +23,20 @@ import { JwtPayload } from './dto/jwt.dto';
 export class AuthService {
   constructor(
     private readonly userService: UserService,
+    private readonly hashService: HashService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<EnvironmentVariables>,
   ) {}
 
-  async validate(input: LoginDTO) {
-    const user = (await this.userService.getOneByEmailOrName(
-      input.email,
-    )) as User;
+  async validateUser(input: LoginDTO) {
+    const user = await this.userService.getOne(input.email);
+    // get with credentials
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await this.comparePassword(
+    const isPasswordValid = await this.hashService.compare(
       input.password,
       user.password,
     );
@@ -46,7 +48,7 @@ export class AuthService {
     return user;
   }
 
-  async signIn(user: User): Promise<LoginResponse> {
+  async generateToken(user: User): Promise<LoginUser> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -80,36 +82,28 @@ export class AuthService {
     };
   }
 
-  async comparePassword(password: string, hash: string) {
-    return bcrypt.compare(password, hash);
+  async signIn(input: LoginDTO): Promise<LoginUser> {
+    const user = await this.validateUser(input);
+    const data = await this.generateToken(user);
+
+    return new LoginUser(
+      data.access_token,
+      data.refresh_token,
+      data.username,
+      data.id,
+    );
   }
 
-  async hashPassword(password: string) {
-    return bcrypt.hash(password, 10);
-  }
-
-  async authenticate(input: LoginDTO): Promise<IResponse<LoginResponse>> {
-    const user = await this.validate(input);
-    const data = await this.signIn(user);
-
-    return {
-      message: 'success',
-      statusCode: 200,
-      data,
-    };
-  }
-
-  async register(
-    input: RegistrationDTO,
-  ): Promise<IResponse<RegistrationResponse>> {
-    const user = await this.userService.getOneByEmailOrName(input.email);
+  async register(input: RegistrationDTO): Promise<RegisteredUser> {
+    const user = await this.userService.doseExist(input.email);
+    // boolean usage
 
     if (user) {
       throw new BadRequestException('User already exists');
     }
 
     const id = createId();
-    const hashedPassword = await this.hashPassword(input.password);
+    const hashedPassword = await this.hashService.hash(input.password);
 
     await this.userService.create({
       id,
@@ -121,66 +115,45 @@ export class AuthService {
       token: null,
     });
 
-    return {
-      message: 'success',
-      statusCode: 201,
-      data: {
-        id,
-        username: input.username,
-        email: input.email,
-      },
-    };
+    return new RegisteredUser(id, input.username, input.email);
   }
 
-  async refresh(
-    refreshToken: string,
-    email: string,
-  ): Promise<IResponse<LoginResponse>> {
-    const user = (await this.userService.getOneByEmailOrName(email)) as User;
+  async refresh(refreshToken: string, email: string): Promise<LoginUser> {
+    const user = await this.userService.getOne(email);
+    // get with credentials
 
     if (!user || !user.token || user.token !== refreshToken) {
       throw new UnauthorizedException();
     }
 
     const { access_token: token, refresh_token: newRefreshToken } =
-      await this.signIn(user);
+      await this.generateToken(user);
 
-    return {
-      statusCode: 200,
-      message: 'success',
-      data: {
-        access_token: token,
-        refresh_token: newRefreshToken,
-        username: user.name,
-        id: user.id,
-      },
-    };
+    return new LoginUser(token, newRefreshToken, user.name, user.id);
   }
 
-  async getSession(email: string): Promise<IResponse<Partial<User>>> {
-    const user = await this.userService.getOneByEmailOrName(email, false);
-
+  async getSession(email: string): Promise<CurrentUser> {
+    const user = await this.userService.getOneWithoutCredentials(email);
+    // without credentials
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return {
-      statusCode: 200,
-      message: 'success',
-      data: user,
-    };
+    return new CurrentUser(
+      user.id,
+      user.name,
+      user.email,
+      user.avatar,
+      user.isAdmin,
+    );
   }
 
-  async logout(id: string): Promise<IResponse<null>> {
+  async logout(id: string): Promise<null> {
     await this.userService.update({
       id,
       token: null,
     });
 
-    return {
-      statusCode: 200,
-      message: 'success',
-      data: null,
-    };
+    return null;
   }
 }
