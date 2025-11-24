@@ -23,7 +23,7 @@ import { CurrentUser } from './entities/current.entity';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 import { AccessTokenGuard } from './strategies/accessToken.guard';
 
-import type { CustomRequest } from '../type';
+import type { CustomRequest } from '../common/type';
 
 @Controller('auth')
 export class AuthController {

@@ -16,7 +16,7 @@ import { RegisteredUser } from './entities/register.entity';
 import { CurrentUser } from './entities/current.entity';
 
 import { UserService } from '../user/user.service';
-import { EnvironmentVariables } from '../env';
+import { EnvironmentVariables } from '../common/env';
 import { JwtPayload } from './dto/jwt.dto';
 
 @Injectable()

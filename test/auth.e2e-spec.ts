@@ -5,7 +5,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/infra/database/prisma.service';
 import { createId } from '@paralleldrive/cuid2';
-import type { IResponse } from 'src/type';
+import type { IResponse } from 'src/common/type';
 import type { JwtPayload } from 'src/auth/dto/jwt.dto';
 
 jest.mock('@paralleldrive/cuid2', () => ({
