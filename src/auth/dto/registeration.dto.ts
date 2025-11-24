@@ -25,9 +25,3 @@ export class RegistrationDTO {
   @IsOptional()
   avatar?: string;
 }
-
-export type RegistrationResponse = {
-  id: string;
-  username: string;
-  email: string;
-};

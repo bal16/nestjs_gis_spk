@@ -10,10 +10,3 @@ export class LoginDTO {
   @IsNotEmpty()
   password: string;
 }
-
-export type LoginResponse = {
-  access_token: string;
-  refresh_token: string;
-  username: string;
-  id: string;
-};
