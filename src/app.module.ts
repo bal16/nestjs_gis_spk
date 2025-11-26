@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import env from './common/env';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
@@ -14,6 +15,24 @@ import env from './common/env';
       isGlobal: true,
       envFilePath: '.env',
       load: [env],
+    }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty' }
+            : undefined,
+
+        redact: {
+          paths: [
+            'req.headers.authorization',
+            'req.body.password',
+            'req.body.confirmPassword',
+            'req.body.oldPassword',
+          ],
+          remove: false, // "***"
+        },
+      },
     }),
     PrismaModule,
     UserModule,
