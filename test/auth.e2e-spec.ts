@@ -5,8 +5,9 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/infra/database/prisma.service';
 import { createId } from '@paralleldrive/cuid2';
-import type { IResponse } from 'src/common/type';
+// import type { WebResponse } from 'src/common/type';
 import type { JwtPayload } from 'src/auth/dto/jwt.dto';
+import type { WebResponse } from 'src/common/responses/web.response';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
@@ -53,7 +54,7 @@ describe('AuthController (e2e)', () => {
         .send(testUser)
         .expect(201)
         .then((res) => {
-          expect((res.body as IResponse<JwtPayload>).data).toEqual({
+          expect((res.body as WebResponse<JwtPayload>).data).toEqual({
             id: expect.any(String) as string,
             username: testUser.username,
             email: testUser.email,
@@ -82,7 +83,7 @@ describe('AuthController (e2e)', () => {
         .send({ email: testUser.email, password: testUser.password })
         .expect(200)
         .then((res) => {
-          const body = res.body as IResponse<{
+          const body = res.body as WebResponse<{
             access_token: string;
             refresh_token: string;
           }>;
@@ -103,7 +104,7 @@ describe('AuthController (e2e)', () => {
     let accessToken: string;
     let refreshToken: string;
 
-    type AuthRouteResponseBody = IResponse<{
+    type AuthRouteResponseBody = WebResponse<{
       access_token: string;
       refresh_token: string;
     }>;
@@ -124,7 +125,7 @@ describe('AuthController (e2e)', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
         .then((res) => {
-          expect((res.body as IResponse<JwtPayload>).data.email).toBe(
+          expect((res.body as WebResponse<JwtPayload>).data.email).toBe(
             testUser.email,
           );
         });
