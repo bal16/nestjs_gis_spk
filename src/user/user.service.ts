@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { User } from 'generated/prisma';
+import { User, type Prisma } from 'generated/prisma';
 import { PrismaService } from '../infra/database/prisma.service';
 
 @Injectable()
@@ -41,7 +41,7 @@ export class UserService {
     );
   }
 
-  async create(user: User): Promise<User> {
+  async create(user: Prisma.UserCreateInput): Promise<User> {
     return await this.prisma.user.create({
       data: user,
     });

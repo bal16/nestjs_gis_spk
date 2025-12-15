@@ -2,17 +2,17 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { HashService } from './hash.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { createId } from '@paralleldrive/cuid2';
 
-import { User } from '../../generated/prisma';
+import { Prisma, User } from '../../generated/prisma';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import { LoginUser } from './entities/login.entity';
-import { RegisteredUser } from './entities/register.entity';
+import { RegisteredUser } from './dto/registerd-user.dto';
 import { CurrentUser } from './entities/current.entity';
 
 import { UserService } from '../user/user.service';
@@ -95,27 +95,33 @@ export class AuthService {
   }
 
   async register(input: RegistrationDTO): Promise<RegisteredUser> {
-    const user = await this.userService.doseExist(input.email);
-    // boolean usage
+    try {
+      const hashedPassword = await this.hashService.hash(input.password);
 
-    if (user) {
-      throw new BadRequestException('User already exists');
+      const registeredUser = await this.userService.create({
+        password: hashedPassword,
+        email: input.email,
+        name: input.username,
+        isAdmin: false,
+        avatar: input.avatar || null,
+      });
+
+      return new RegisteredUser(
+        registeredUser.id,
+        registeredUser.name,
+        registeredUser.email,
+      );
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new BadRequestException('Email already in use');
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong during registration',
+      );
     }
-
-    const id = createId();
-    const hashedPassword = await this.hashService.hash(input.password);
-
-    await this.userService.create({
-      id,
-      password: hashedPassword,
-      email: input.email,
-      name: input.username,
-      isAdmin: false,
-      avatar: input.avatar || null,
-      token: null,
-    });
-
-    return new RegisteredUser(id, input.username, input.email);
   }
 
   async refresh(refreshToken: string, email: string): Promise<LoginUser> {

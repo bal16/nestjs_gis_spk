@@ -1,26 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 
 import { HashService } from './hash.service';
-import { User } from 'generated/prisma';
+import { Prisma, User } from '../../generated/prisma';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import { ConfigService } from '@nestjs/config';
-import { createId } from '@paralleldrive/cuid2';
 import { LoginUser } from './entities/login.entity';
-import { RegisteredUser } from './entities/register.entity';
+import { RegisteredUser } from './dto/registerd-user.dto';
 import { CurrentUser } from './entities/current.entity';
-
-jest.mock('@paralleldrive/cuid2', () => ({
-  createId: jest.fn(),
-}));
-
-const mockedCreateId = createId as jest.Mock;
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -75,7 +72,6 @@ describe('AuthService', () => {
     mockUserService = module.get(UserService);
     mockHashService = module.get(HashService);
     mockConfigService = module.get(ConfigService);
-    mockedCreateId.mockReturnValue('id-cuid2-palsu-12345');
   });
 
   it('should be defined', () => {
@@ -195,16 +191,37 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('username');
       expect(result).toHaveProperty('email');
 
-      expect(result.id).toBe('id-cuid2-palsu-12345');
+      expect(result.id).toBe('cuid');
       expect(result.username).toBe('test-user');
       expect(result.email).toBe('test@mail.co');
     });
 
-    it('should throw an error if user already exists', async () => {
-      mockUserService.doseExist.mockResolvedValue(true);
+    it('should throw BadRequestException if email is already in use', async () => {
+      const hashedPassword = 'hashed-password-from-bcrypt';
+      mockHashService.hash.mockResolvedValue(hashedPassword);
 
-      await expect(service.register(RegisterTestUser)).rejects.toBeInstanceOf(
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        {
+          code: 'P2002',
+          clientVersion: '5.0.0',
+        },
+      );
+
+      mockUserService.create.mockRejectedValue(prismaError);
+
+      await expect(service.register(RegisterTestUser)).rejects.toThrow(
         BadRequestException,
+      );
+    });
+
+    it('should throw InternalServerErrorException for other errors', async () => {
+      const hashedPassword = 'hashed-password-from-bcrypt';
+      mockHashService.hash.mockResolvedValue(hashedPassword);
+      mockUserService.create.mockRejectedValue(new Error('Some other error'));
+
+      await expect(service.register(RegisterTestUser)).rejects.toThrow(
+        InternalServerErrorException,
       );
     });
   });
