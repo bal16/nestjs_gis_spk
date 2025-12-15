@@ -3,7 +3,6 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule } from '@nestjs/config';
 import { HashService } from './hash.service';
 
 @Module({
@@ -11,7 +10,6 @@ import { HashService } from './hash.service';
   providers: [AuthService, HashService],
   imports: [
     UserModule,
-    ConfigModule,
     JwtModule.register({
       global: true,
       signOptions: { expiresIn: '1d' },

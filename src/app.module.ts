@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './infra/database/pirsma.module';
+// import { PrismaModule } from './infra/database/pirsma.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -34,7 +34,7 @@ import { LoggerModule } from 'nestjs-pino';
         },
       },
     }),
-    PrismaModule,
+    // PrismaModule,
     UserModule,
     AuthModule,
   ],

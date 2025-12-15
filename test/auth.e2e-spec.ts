@@ -6,8 +6,8 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/infra/database/prisma.service';
 import { createId } from '@paralleldrive/cuid2';
 // import type { WebResponse } from 'src/common/type';
-import type { JwtPayload } from 'src/auth/dto/jwt.dto';
-import type { WebResponse } from 'src/common/responses/web.response';
+import type { JwtPayload } from '../src/auth/dto/jwt.dto';
+import type { WebResponse } from '../src/common/responses/web.response';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),

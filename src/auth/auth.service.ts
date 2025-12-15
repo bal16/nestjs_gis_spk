@@ -8,7 +8,7 @@ import { HashService } from './hash.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
-import { Prisma, User } from '../../generated/prisma';
+import { Prisma, type User } from '../generated/prisma/client';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import { LoginUser } from './entities/login.entity';
@@ -103,7 +103,6 @@ export class AuthService {
         email: input.email,
         name: input.username,
         isAdmin: false,
-        avatar: input.avatar || null,
       });
 
       return new RegisteredUser(
@@ -145,13 +144,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return new CurrentUser(
-      user.id,
-      user.name,
-      user.email,
-      user.avatar,
-      user.isAdmin,
-    );
+    return new CurrentUser(user.id, user.name, user.email, user.isAdmin);
   }
 
   async logout(id: string): Promise<null> {

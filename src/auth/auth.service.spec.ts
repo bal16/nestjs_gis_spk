@@ -11,7 +11,7 @@ import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 
 import { HashService } from './hash.service';
-import { Prisma, User } from '../../generated/prisma';
+import { Prisma, User } from '../generated/prisma/client';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import { ConfigService } from '@nestjs/config';
@@ -33,7 +33,6 @@ describe('AuthService', () => {
     password: '$2a$12$IOMRUtt534W9u8wEl5TBm.iSJZZ3GPcnG.wtJi/jfdDRgGwlbtTXm',
     isAdmin: false,
     token: null,
-    avatar: 'avatar.jpg',
   };
 
   const loginTestUser: LoginDTO = {
@@ -308,7 +307,6 @@ describe('AuthService', () => {
         name: 'test-user',
         email: 'test@mail.co',
         isAdmin: false,
-        avatar: 'avatar.jpg',
       };
 
       mockUserService.getOneWithoutCredentials.mockResolvedValue(

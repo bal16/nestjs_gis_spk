@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../infra/database/prisma.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import type { User } from '../../generated/prisma';
+import type { User } from '../generated/prisma/client';
 
 describe('UserService', () => {
   let service: UserService;
@@ -15,7 +15,6 @@ describe('UserService', () => {
     password: 'hashed-password',
     token: null,
     isAdmin: false,
-    avatar: 'avatar.jpg',
   };
 
   const mockUserWithoutCredentials: Omit<User, 'password' | 'token'> = {
@@ -23,7 +22,6 @@ describe('UserService', () => {
     name: 'test-user',
     email: 'test@mail.co',
     isAdmin: false,
-    avatar: 'avatar.jpg',
   };
 
   beforeEach(async () => {
@@ -34,9 +32,9 @@ describe('UserService', () => {
       .useValue(mockDeep<PrismaService>())
       .compile();
 
-    service = module.get<UserService>(UserService);
-
     mockPrismaService = module.get(PrismaService);
+
+    service = module.get<UserService>(UserService);
   });
 
   it('should be defined', () => {

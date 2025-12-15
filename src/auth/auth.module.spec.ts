@@ -4,34 +4,31 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { createId } from '@paralleldrive/cuid2';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HashService } from './hash.service';
-
-jest.mock('@paralleldrive/cuid2', () => ({
-  createId: jest.fn(),
-}));
-
-const mockedCreateId = createId as jest.Mock;
+import { PrismaService } from '../infra/database/prisma.service';
 
 describe('AuthModule', () => {
   let module: TestingModule;
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
-      imports: [AuthModule],
+      imports: [
+        AuthModule,
+        ConfigModule.forRoot({ isGlobal: true }), // ensure ConfigService is provided
+      ],
     })
       .overrideProvider(UserService)
-      .useValue({}) // Mock UserService as AuthService depends on it
+      .useValue({})
       .overrideProvider(JwtService)
-      .useValue({}) // Mock JwtService as AuthService depends on it
+      .useValue({})
       .overrideProvider(ConfigService)
-      .useValue({}) // Mock ConfigService as AuthService might depend on it for JWT secrets
+      .useValue({ get: () => undefined })
       .overrideProvider(HashService)
       .useValue({})
+      .overrideProvider(PrismaService)
+      .useValue({})
       .compile();
-
-    mockedCreateId.mockReturnValue('id-cuid2-palsu-12345');
   });
 
   it('should be defined', () => {
