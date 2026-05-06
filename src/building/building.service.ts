@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../infra/database/prisma.service';
+import type { CreateBuildingDTO } from './dto/create-building.dto';
 
 @Injectable()
 export class BuildingService {
@@ -18,6 +19,12 @@ export class BuildingService {
           },
         },
       },
+    });
+  }
+
+  create(data: CreateBuildingDTO) {
+    return this.prisma.building.create({
+      data,
     });
   }
 }
