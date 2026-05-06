@@ -4,12 +4,15 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { BuildingService } from './building.service';
 import { WebResponse } from '../common/responses/web.response';
 import { CreateBuildingDTO } from './dto/create-building.dto';
+import { UpdateBuildingDTO } from './dto/update-building.dto';
 import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
 
 @Controller('buildings')
@@ -34,6 +37,22 @@ export class BuildingController {
       'Building created successfully',
       buildings,
       HttpStatus.CREATED,
+    );
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Put(':id')
+  async update(
+    @Body() updateBuildingDTO: UpdateBuildingDTO,
+    @Param('id') id: string,
+  ) {
+    const buildings = await this.buildingService.update(updateBuildingDTO, id);
+
+    return new WebResponse(
+      'Building updated successfully',
+      buildings,
+      HttpStatus.OK,
     );
   }
 }
