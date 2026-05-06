@@ -11,15 +11,13 @@ async function bootstrap() {
 
   const httpAdapter = app.get(HttpAdapterHost);
 
-  // 2. UBAH RESOLVE: Gunakan 'PinoLogger' di sini, bukan 'Logger'
   const pinoLogger = await app.resolve(PinoLogger);
 
-  // 3. Set context manual di sini (opsional, biar rapi)
   pinoLogger.setContext('GlobalFilter');
 
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapter, pinoLogger));
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3001);
   app.useGlobalPipes(new ValidationPipe());
 }
 bootstrap();
