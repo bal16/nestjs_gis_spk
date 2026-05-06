@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -72,5 +73,14 @@ export class DssController {
     const results = await this.dssService.calculateAndSave();
 
     return new WebResponse('Success', results, HttpStatus.OK);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Delete('run/details/:id')
+  async deleteRunDetail(@Param('id') id: string) {
+    const isDeleted = await this.dssService.deleteRunDetail(id);
+
+    return new WebResponse('Success', isDeleted, HttpStatus.OK);
   }
 }
