@@ -53,6 +53,7 @@ describe('AuthController', () => {
         'access-token',
         'refresh-token',
         'test-user',
+        true,
         'user-id',
       );
 
@@ -97,6 +98,7 @@ describe('AuthController', () => {
         'new-access-token',
         'new-refresh-token',
         'test-user',
+        true,
         'user-id',
       );
 
@@ -128,7 +130,6 @@ describe('AuthController', () => {
         'user-id',
         'test-user',
         'test@mail.co',
-        null,
         false,
       );
 
