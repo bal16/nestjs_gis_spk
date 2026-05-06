@@ -5,27 +5,27 @@ describe('JwtPayload', () => {
     const payloadData = {
       sub: 'user-id-123',
       email: 'test@example.com',
-      admin: false,
+      isAdmin: false,
     };
 
     const payload = new JwtPayload();
     payload.sub = payloadData.sub;
     payload.email = payloadData.email;
-    payload.admin = payloadData.admin;
+    payload.isAdmin = payloadData.isAdmin;
 
     expect(payload).toBeInstanceOf(JwtPayload);
     expect(payload.sub).toBe(payloadData.sub);
     expect(payload.email).toBe(payloadData.email);
-    expect(payload.admin).toBe(payloadData.admin);
+    expect(payload.isAdmin).toBe(payloadData.isAdmin);
   });
 
   it('should hold correct values for different user types', () => {
     const adminPayload: JwtPayload = {
       sub: 'admin-id-456',
       email: 'admin@example.com',
-      admin: true,
+      isAdmin: true,
     };
 
-    expect(adminPayload.admin).toBe(true);
+    expect(adminPayload.isAdmin).toBe(true);
   });
 });
