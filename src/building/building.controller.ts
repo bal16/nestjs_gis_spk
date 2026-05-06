@@ -14,6 +14,7 @@ import { BuildingService } from './building.service';
 import { WebResponse } from '../common/responses/web.response';
 import { CreateBuildingDTO } from './dto/create-building.dto';
 import { UpdateBuildingDTO } from './dto/update-building.dto';
+import { CreateAssessmentDTO } from './dto/create-assessment.dto';
 import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
 
 @Controller('buildings')
@@ -77,5 +78,24 @@ export class BuildingController {
     const assessments = await this.buildingService.findOneWithAssessments(code);
 
     return new WebResponse('Success', assessments, HttpStatus.OK);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @Post(':code/assessments')
+  async createAssessment(
+    @Param('code') id: string,
+    @Body() createAssessmentDTO: CreateAssessmentDTO,
+  ) {
+    const assessment = await this.buildingService.createAssessment(
+      id,
+      createAssessmentDTO,
+    );
+
+    return new WebResponse(
+      'Assessment created successfully',
+      assessment,
+      HttpStatus.CREATED,
+    );
   }
 }

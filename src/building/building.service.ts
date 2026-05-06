@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../infra/database/prisma.service';
 import type { CreateBuildingDTO } from './dto/create-building.dto';
 import type { UpdateBuildingDTO } from './dto/update-building.dto';
+import type { CreateAssessmentDTO } from './dto/create-assessment.dto';
 
 @Injectable()
 export class BuildingService {
@@ -46,6 +47,23 @@ export class BuildingService {
     return this.prisma.building.findFirst({
       where: { code },
       include: { assessments: true },
+    });
+  }
+
+  async createAssessment(
+    code: string,
+    createAssessmentDTO: CreateAssessmentDTO,
+  ) {
+    const buiilding = await this.prisma.building.findFirst({
+      where: { code },
+      select: { id: true },
+    });
+
+    return this.prisma.assessment.create({
+      data: {
+        ...createAssessmentDTO,
+        buildingId: buiilding!.id,
+      },
     });
   }
 }
