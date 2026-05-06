@@ -1,13 +1,16 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { DssService } from './dss.service';
 import { WebResponse } from '../common/responses/web.response';
+import { BatchUpdateWeightsDTO } from './dto/update-weights.dto';
 import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
 
 @Controller('dss')
@@ -51,5 +54,13 @@ export class DssController {
   async getWeights() {
     const weightDatas = await this.dssService.getWeights();
     return new WebResponse('Success', weightDatas, HttpStatus.OK);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Put('weights')
+  async updateWeights(@Body() updateWeightsDTO: BatchUpdateWeightsDTO) {
+    const isUpdated = await this.dssService.updateWeights(updateWeightsDTO);
+    return new WebResponse('Success', isUpdated, HttpStatus.OK);
   }
 }
