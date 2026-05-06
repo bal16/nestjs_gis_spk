@@ -41,4 +41,11 @@ export class BuildingService {
   delete(id: string) {
     return this.prisma.building.delete({ where: { id } });
   }
+
+  findOneWithAssessments(code: string) {
+    return this.prisma.building.findFirst({
+      where: { code },
+      include: { assessments: true },
+    });
+  }
 }

@@ -69,4 +69,13 @@ export class BuildingController {
       HttpStatus.OK,
     );
   }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get(':code/assessments')
+  async findAssessments(@Param('code') code: string) {
+    const assessments = await this.buildingService.findOneWithAssessments(code);
+
+    return new WebResponse('Success', assessments, HttpStatus.OK);
+  }
 }
