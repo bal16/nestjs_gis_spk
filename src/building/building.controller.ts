@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -52,6 +53,19 @@ export class BuildingController {
     return new WebResponse(
       'Building updated successfully',
       buildings,
+      HttpStatus.OK,
+    );
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    const isDeleted = await this.buildingService.delete(id);
+
+    return new WebResponse(
+      'Building deleted successfully',
+      isDeleted,
       HttpStatus.OK,
     );
   }

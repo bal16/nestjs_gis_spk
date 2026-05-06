@@ -37,4 +37,8 @@ export class BuildingService {
       data,
     });
   }
+
+  delete(id: string) {
+    return this.prisma.building.delete({ where: { id } });
+  }
 }
