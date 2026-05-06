@@ -83,4 +83,13 @@ export class DssController {
 
     return new WebResponse('Success', isDeleted, HttpStatus.OK);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Delete('run/:id')
+  async deleteRun(@Param('id') id: string) {
+    const isDeleted = await this.dssService.deleteRun(id);
+
+    return new WebResponse('Success', isDeleted, HttpStatus.OK);
+  }
 }

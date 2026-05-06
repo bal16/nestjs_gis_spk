@@ -254,6 +254,16 @@ export class DssService {
     });
   }
 
+  async deleteRun(id: string) {
+    await this.prisma.sawRun.delete({
+      where: {
+        id,
+      },
+    });
+
+    return true;
+  }
+
   async deleteRunDetail(id: string) {
     await this.prisma.sawRunDetail.delete({
       where: {
