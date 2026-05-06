@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -62,5 +63,14 @@ export class DssController {
   async updateWeights(@Body() updateWeightsDTO: BatchUpdateWeightsDTO) {
     const isUpdated = await this.dssService.updateWeights(updateWeightsDTO);
     return new WebResponse('Success', isUpdated, HttpStatus.OK);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Post('calculate')
+  async calculate() {
+    const results = await this.dssService.calculateAndSave();
+
+    return new WebResponse('Success', results, HttpStatus.OK);
   }
 }
