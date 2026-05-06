@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HashService } from './hash.service';
 import * as bcrypt from 'bcrypt';
 
-// Mock the bcrypt library
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
   hash: jest.fn(),
