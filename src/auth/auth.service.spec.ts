@@ -33,6 +33,8 @@ describe('AuthService', () => {
     password: '$2a$12$IOMRUtt534W9u8wEl5TBm.iSJZZ3GPcnG.wtJi/jfdDRgGwlbtTXm',
     isAdmin: false,
     token: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const loginTestUser: LoginDTO = {
@@ -133,15 +135,15 @@ describe('AuthService', () => {
 
       const result = await service.generateToken(mockUser);
 
-      expect(result).toHaveProperty('access_token');
-      expect(result).toHaveProperty('refresh_token');
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('username');
       expect(result).toHaveProperty('id');
 
       expect(result.username).toBe(mockUser.name);
       expect(result.id).toBe(mockUser.id);
-      expect(result.access_token).toBe(accessToken);
-      expect(result.refresh_token).toBe(refreshToken);
+      expect(result.accessToken).toBe(accessToken);
+      expect(result.refreshToken).toBe(refreshToken);
     });
   });
 
@@ -156,13 +158,13 @@ describe('AuthService', () => {
       const result = await service.signIn(loginTestUser);
 
       expect(result).toBeInstanceOf(LoginUser);
-      expect(result).toHaveProperty('access_token');
+      expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('username');
       expect(result).toHaveProperty('id');
 
       expect(result.username).toBe(mockUser.name);
       expect(result.id).toBe(mockUser.id);
-      expect(result.access_token).toBe('token');
+      expect(result.accessToken).toBe('token');
     });
 
     it('should throw UnauthorizedException for invalid credentials', async () => {
@@ -251,13 +253,13 @@ describe('AuthService', () => {
       const result = await service.refresh(refreshToken, userEmail);
 
       expect(result).toBeInstanceOf(LoginUser);
-      expect(result).toHaveProperty('access_token');
-      expect(result).toHaveProperty('refresh_token');
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('username');
       expect(result).toHaveProperty('id');
 
-      expect(result.access_token).toBe(newAccessToken);
-      expect(result.refresh_token).toBe(newRefreshToken);
+      expect(result.accessToken).toBe(newAccessToken);
+      expect(result.refreshToken).toBe(newRefreshToken);
       expect(result.username).toBe(mockUser.name);
       expect(result.id).toBe(mockUser.id);
     });
@@ -307,6 +309,8 @@ describe('AuthService', () => {
         name: 'test-user',
         email: 'test@mail.co',
         isAdmin: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       mockUserService.getOneWithoutCredentials.mockResolvedValue(
