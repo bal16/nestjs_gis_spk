@@ -15,4 +15,10 @@ export class CurrentUser implements User {
 
   @Exclude()
   password: string;
+
+  @Exclude()
+  createdAt: Date;
+
+  @Exclude()
+  updatedAt: Date;
 }
