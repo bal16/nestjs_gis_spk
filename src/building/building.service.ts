@@ -25,6 +25,17 @@ export class BuildingService {
     });
   }
 
+  findAllWithAssessment() {
+    return this.prisma.building.findMany({
+      include: {
+        assessments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+  }
+
   create(data: CreateBuildingDTO) {
     return this.prisma.building.create({
       data,
