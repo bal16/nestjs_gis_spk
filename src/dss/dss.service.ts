@@ -48,4 +48,23 @@ export class DssService {
       },
     });
   }
+
+  // async findAllResults() {
+  //   return this.prisma.building.findMany({
+  //     include: {
+  //       assessments: true,
+  //       sawRunDetails: {
+  //         orderBy: { sawRun: { executedAt: 'desc' } },
+  //         take: 1,
+  //       },
+  //     },
+  //   });
+  // }
+
+  getWeights() {
+    return this.prisma.weightConfiguration.findMany({
+      where: { subWeightFrom: null },
+      include: { subWeights: true },
+    });
+  }
 }

@@ -44,4 +44,12 @@ export class DssController {
     const data = await this.dssService.getResultById(id);
     return new WebResponse('Success', data, HttpStatus.OK);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Get('weights')
+  async getWeights() {
+    const weightDatas = await this.dssService.getWeights();
+    return new WebResponse('Success', weightDatas, HttpStatus.OK);
+  }
 }
