@@ -19,4 +19,33 @@ export class DssService {
       orderBy: { executedAt: 'desc' },
     });
   }
+
+  async getResultById(id: string) {
+    return this.prisma.sawRun.findUnique({
+      where: { id },
+      include: {
+        sawRunDetails: {
+          include: {
+            building: true,
+            assessment: true,
+          },
+        },
+      },
+    });
+  }
+  async getLastResult() {
+    return this.prisma.sawRun.findFirst({
+      include: {
+        sawRunDetails: {
+          include: {
+            building: true,
+            assessment: true,
+          },
+        },
+      },
+      orderBy: {
+        executedAt: 'desc',
+      },
+    });
+  }
 }

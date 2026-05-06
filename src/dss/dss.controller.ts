@@ -27,4 +27,12 @@ export class DssController {
     const data = await this.dssService.findAllResults();
     return new WebResponse('Success', data, HttpStatus.OK);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Get('runs/lastest')
+  async getLastResults() {
+    const data = await this.dssService.getLastResult();
+    return new WebResponse('Success', data, HttpStatus.OK);
+  }
 }
