@@ -3,6 +3,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   UseGuards,
 } from '@nestjs/common';
 import { DssService } from './dss.service';
@@ -33,6 +34,14 @@ export class DssController {
   @Get('runs/lastest')
   async getLastResults() {
     const data = await this.dssService.getLastResult();
+    return new WebResponse('Success', data, HttpStatus.OK);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AccessTokenGuard)
+  @Get('runs/:id')
+  async getResultById(@Param('id') id: string) {
+    const data = await this.dssService.getResultById(id);
     return new WebResponse('Success', data, HttpStatus.OK);
   }
 }
