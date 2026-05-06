@@ -6,6 +6,16 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "collectCoverageFrom": ["src/**/*.ts", "!src/main.ts"],
-  "coverageDirectory": "../coverage/e2e"
+  "moduleNameMapper": {
+    "^(\\.\\.?\\/.+)\\.js$": "$1"
+  },
+  "reporters": [
+    "default",
+    [
+      "<rootDir>/markdown-reporter.js",
+      {
+        "outputPath": "./test/results/e2e.test_report.md"
+      }
+    ]
+  ]
 }
