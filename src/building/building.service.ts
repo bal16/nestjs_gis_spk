@@ -3,6 +3,7 @@ import { PrismaService } from '../infra/database/prisma.service';
 import type { CreateBuildingDTO } from './dto/create-building.dto';
 import type { UpdateBuildingDTO } from './dto/update-building.dto';
 import type { CreateAssessmentDTO } from './dto/create-assessment.dto';
+import type { UpdateAssessmentDTO } from './dto/update-assessment.dto';
 
 @Injectable()
 export class BuildingService {
@@ -62,6 +63,25 @@ export class BuildingService {
     return this.prisma.assessment.create({
       data: {
         ...createAssessmentDTO,
+        buildingId: buiilding!.id,
+      },
+    });
+  }
+
+  async updateAssessment(
+    code: string,
+    assessmentId: string,
+    updateAssessmentDTO: UpdateAssessmentDTO,
+  ) {
+    const buiilding = await this.prisma.building.findFirst({
+      where: { code },
+      select: { id: true },
+    });
+
+    return this.prisma.assessment.update({
+      where: { id: assessmentId },
+      data: {
+        ...updateAssessmentDTO,
         buildingId: buiilding!.id,
       },
     });
