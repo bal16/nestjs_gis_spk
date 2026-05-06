@@ -120,4 +120,17 @@ export class BuildingController {
       HttpStatus.OK,
     );
   }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Delete('/assessments/:assessmentId')
+  async deleteAssessment(@Param('assessmentId') assessmentId: string) {
+    const isDeleted = await this.buildingService.deleteAssessment(assessmentId);
+
+    return new WebResponse(
+      'Assessment deleted successfully',
+      isDeleted,
+      HttpStatus.OK,
+    );
+  }
 }

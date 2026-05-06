@@ -86,4 +86,10 @@ export class BuildingService {
       },
     });
   }
+
+  deleteAssessment(assessmentId: string) {
+    return this.prisma.assessment.delete({
+      where: { id: assessmentId },
+    });
+  }
 }
