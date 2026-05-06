@@ -53,7 +53,7 @@ export class AuthController {
 
   @UseGuards(RefreshTokenGuard)
   @HttpCode(HttpStatus.OK)
-  @Get('refresh')
+  @Post('refresh')
   async refresh(
     @Req() request: CustomRequest,
   ): Promise<WebResponse<LoginUser>> {
