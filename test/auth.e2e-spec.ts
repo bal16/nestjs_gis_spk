@@ -8,16 +8,26 @@ import { createId } from '@paralleldrive/cuid2';
 // import type { WebResponse } from 'src/common/type';
 import type { JwtPayload } from '../src/auth/dto/jwt.dto';
 import type { WebResponse } from '../src/common/responses/web.response';
+// import { PrismaPg } from '@prisma/adapter-pg';
+// import { PrismaClient } from '../src/generated/prisma/client';
 
 jest.mock('@paralleldrive/cuid2', () => ({
   createId: jest.fn(),
 }));
 
+// const adapter = new PrismaPg({
+//   connectionString: process.env.DATABASE_URL!,
+// });
+
+// const prismaClient = new PrismaClient({
+//   adapter,
+// });
+
 const mockedCreateId = createId as jest.Mock;
 
 mockedCreateId.mockReturnValue('id-cuid2-palsu-12345');
 
-describe('AuthController (e2e)', () => {
+describe('AuthModule', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
 
@@ -28,6 +38,7 @@ describe('AuthController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
+    app.useLogger(false);
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
@@ -47,7 +58,19 @@ describe('AuthController (e2e)', () => {
     password: 'password123',
   };
 
-  describe('/auth/register (POST)', () => {
+  type AuthRouteResponseBody = WebResponse<{
+    accessToken: string;
+    refreshToken: string;
+  }>;
+
+  describe('POST /auth/register', () => {
+    it('should reject invalid payload (400)', () => {
+      return request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ email: 'not-an-email', username: '', password: '12' }) // Invalid payload
+        .expect(400);
+    });
+
     it('should register a new user and return 201', () => {
       return request(app.getHttpServer())
         .post('/auth/register')
@@ -72,9 +95,23 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  describe('/auth/login (POST)', () => {
+  describe('POST /auth/login', () => {
     beforeEach(async () => {
       await request(app.getHttpServer()).post('/auth/register').send(testUser);
+    });
+
+    it('should reject invalid payload (400)', () => {
+      return request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: 'not-an-email', password: '' }) // Invalid payload
+        .expect(400);
+    });
+
+    it('should not log in with invalid credentials and return 401', () => {
+      return request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: testUser.email, password: 'wrongpassword' })
+        .expect(401);
     });
 
     it('should log in a user and return tokens', () => {
@@ -84,30 +121,17 @@ describe('AuthController (e2e)', () => {
         .expect(200)
         .then((res) => {
           const body = res.body as WebResponse<{
-            access_token: string;
-            refresh_token: string;
+            accessToken: string;
+            refreshToken: string;
           }>;
-          expect(body.data).toHaveProperty('access_token');
-          expect(body.data).toHaveProperty('refresh_token');
+          expect(body.data).toHaveProperty('accessToken');
+          expect(body.data).toHaveProperty('refreshToken');
         });
-    });
-
-    it('should not log in with invalid credentials and return 401', () => {
-      return request(app.getHttpServer())
-        .post('/auth/login')
-        .send({ email: testUser.email, password: 'wrongpassword' })
-        .expect(401);
     });
   });
 
-  describe('Authenticated routes', () => {
+  describe('GET /auth/me', () => {
     let accessToken: string;
-    let refreshToken: string;
-
-    type AuthRouteResponseBody = WebResponse<{
-      access_token: string;
-      refresh_token: string;
-    }>;
 
     beforeEach(async () => {
       await request(app.getHttpServer()).post('/auth/register').send(testUser);
@@ -115,11 +139,14 @@ describe('AuthController (e2e)', () => {
         .post('/auth/login')
         .send({ email: testUser.email, password: testUser.password });
       const body = res.body as AuthRouteResponseBody;
-      accessToken = body.data.access_token;
-      refreshToken = body.data.refresh_token;
+      accessToken = body.data.accessToken;
     });
 
-    it('/auth/me (GET) - should get user profile', () => {
+    it('should reject unauthenticated requests', () => {
+      return request(app.getHttpServer()).get('/auth/me').expect(401);
+    });
+
+    it('should get user profile', () => {
       return request(app.getHttpServer())
         .get('/auth/me')
         .set('Authorization', `Bearer ${accessToken}`)
@@ -130,20 +157,54 @@ describe('AuthController (e2e)', () => {
           );
         });
     });
+  });
 
-    it('/auth/refresh (GET) - should refresh tokens', () => {
+  describe('POST /auth/refresh', () => {
+    let refreshToken: string;
+
+    beforeEach(async () => {
+      await request(app.getHttpServer()).post('/auth/register').send(testUser);
+      const res = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: testUser.email, password: testUser.password });
+      const body = res.body as AuthRouteResponseBody;
+      refreshToken = body.data.refreshToken;
+    });
+
+    it('should reject unauthenticated requests', () => {
+      return request(app.getHttpServer()).post('/auth/refresh').expect(401);
+    });
+
+    it('should refresh tokens', () => {
       return request(app.getHttpServer())
-        .get('/auth/refresh')
+        .post('/auth/refresh')
         .set('Authorization', `Bearer ${refreshToken}`)
         .expect(200)
         .then((res) => {
           const body = res.body as AuthRouteResponseBody;
-          expect(body.data).toHaveProperty('access_token');
-          expect(body.data).toHaveProperty('refresh_token');
+          expect(body.data).toHaveProperty('accessToken');
+          expect(body.data).toHaveProperty('refreshToken');
         });
     });
+  });
 
-    it('/auth/session (DELETE) - should log out user', () => {
+  describe('DELETE /auth/session', () => {
+    let accessToken: string;
+
+    beforeEach(async () => {
+      await request(app.getHttpServer()).post('/auth/register').send(testUser);
+      const res = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: testUser.email, password: testUser.password });
+      const body = res.body as AuthRouteResponseBody;
+      accessToken = body.data.accessToken;
+    });
+
+    it('should reject unauthenticated requests', () => {
+      return request(app.getHttpServer()).delete('/auth/session').expect(401);
+    });
+
+    it('should log out user', () => {
       return request(app.getHttpServer())
         .delete('/auth/session')
         .set('Authorization', `Bearer ${accessToken}`)
