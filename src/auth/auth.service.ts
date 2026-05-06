@@ -52,7 +52,7 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      admin: user.isAdmin,
+      isAdmin: user.isAdmin,
     };
 
     const secret = this.configService.get<string>('JWT_SECRET', {
@@ -75,10 +75,11 @@ export class AuthService {
     });
 
     return {
-      access_token: token,
-      refresh_token: refreshToken,
+      accessToken: token,
+      refreshToken: refreshToken,
       username: user.name,
       id: user.id,
+      isAdmin: user.isAdmin,
     };
   }
 
@@ -87,9 +88,10 @@ export class AuthService {
     const data = await this.generateToken(user);
 
     return new LoginUser(
-      data.access_token,
-      data.refresh_token,
+      data.accessToken,
+      data.refreshToken,
       data.username,
+      data.isAdmin,
       data.id,
     );
   }
@@ -131,10 +133,16 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const { access_token: token, refresh_token: newRefreshToken } =
+    const { accessToken: token, refreshToken: newRefreshToken } =
       await this.generateToken(user);
 
-    return new LoginUser(token, newRefreshToken, user.name, user.id);
+    return new LoginUser(
+      token,
+      newRefreshToken,
+      user.name,
+      user.isAdmin,
+      user.id,
+    );
   }
 
   async getSession(email: string): Promise<CurrentUser> {
