@@ -15,6 +15,8 @@ describe('UserService', () => {
     password: 'hashed-password',
     token: null,
     isAdmin: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const mockUserWithoutCredentials: Omit<User, 'password' | 'token'> = {
@@ -22,6 +24,8 @@ describe('UserService', () => {
     name: 'test-user',
     email: 'test@mail.co',
     isAdmin: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
@@ -51,6 +55,15 @@ describe('UserService', () => {
       const result = await service.getOneWithoutCredentials('test@mail.co');
 
       expect(result).toEqual(mockUserWithoutCredentials);
+      // expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+      //   where: {
+      //     OR: [{ email: 'test@mail.co' }, { name: 'test@mail.co' }],
+      //   },
+      //   omit: {
+      //     password: true,
+      //     token: true,
+      //   },
+      // });
       expect(result).not.toHaveProperty('password');
       expect(result).not.toHaveProperty('token');
     });
@@ -71,6 +84,11 @@ describe('UserService', () => {
       const result = await service.getOne('test@mail.co');
 
       expect(result).toEqual(mockUser);
+      // expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+      //   where: {
+      //     OR: [{ email: 'test@mail.co' }, { name: 'test@mail.co' }],
+      //   },
+      // });
     });
 
     it('should return null if user is not found', async () => {
@@ -82,13 +100,21 @@ describe('UserService', () => {
     });
   });
 
-  describe('[method] doseUserExist', () => {
+  describe('[method] doseExist', () => {
     it('should return true if user exists', async () => {
-      mockPrismaService.user.findFirst.mockResolvedValue(mockUser);
+      mockPrismaService.user.findFirst.mockResolvedValue({
+        id: 'cuid',
+      } as User);
 
       const result = await service.doseExist('test@mail.co');
 
       expect(result).toBe(true);
+      // expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
+      //   where: {
+      //     OR: [{ email: 'test@mail.co' }, { name: 'test@mail.co' }],
+      //   },
+      //   select: { id: true },
+      // });
     });
 
     it('should return false if user does not exist', async () => {
@@ -104,9 +130,13 @@ describe('UserService', () => {
     it('should create a new user', async () => {
       mockPrismaService.user.create.mockResolvedValue(mockUser);
 
-      const result = await service.create(mockUser);
+      const payload = { ...mockUser };
+      const result = await service.create(payload);
 
       expect(result).toEqual(mockUser);
+      // expect(mockPrismaService.user.create).toHaveBeenCalledWith({
+      //   data: payload,
+      // });
     });
   });
 
@@ -120,6 +150,10 @@ describe('UserService', () => {
       const result = await service.update(updatePayload);
 
       expect(result).toEqual(updatedUser);
+      // expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+      //   where: { id: mockUser.id },
+      //   data: { name: 'updated-name' },
+      // });
     });
   });
 });
