@@ -1,14 +1,8 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider     = "prisma-client-js"
+  provider     = "prisma-client"
   output       = "../src/generated/prisma"
   moduleFormat = "cjs"
-  runtime      = "nodejs"
+  // runtime      = "nodejs"
 }
 
 datasource db {
@@ -16,56 +10,94 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  name     String  @unique
-  email    String  @unique
-  password String
-  isAdmin  Boolean @default(false)
-  token    String?
+  id        String   @id @default(cuid())
+  name      String   @unique
+  email     String   @unique
+  password  String
+  isAdmin   Boolean  @default(false) @map("is_admin")
+  token     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
 }
 
 model Building {
-  id        String @id @default(cuid())
-  code      String @unique
-  name      String @db.Char(20)
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String   @db.Char(20)
   latitude  Float
   longitude Float
   score     Float?
   priority  Int?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  assessments   Assessment?
+  assessments   Assessment[]
   sawRunDetails SawRunDetail[]
+
+  @@map("buildings")
 }
 
 model Assessment {
-  id           String @id @default(cuid())
-  buildingId   String @unique
-  age          Int
-  structure    Int
-  architecture Int
-  mep          Int
-  utility      Int
-  damage       Int
+  id              String    @id @default(cuid())
+  buildingId      String    @unique @map("building_id")
+  age             Int
+  structure       Int
+  architecture    Int
+  mep             Int
+  utility         Int
+  damage          Int
+  lastMaintenance DateTime? @map("last_maintenance")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  building Building @relation(fields: [buildingId], references: [id])
+  building      Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  sawRunDetails SawRunDetail[]
+
+  @@map("assessments")
 }
 
 model SawRun {
-  id             String         @id @default(cuid())
-  date           DateTime
-  averageScore   Float?
-  totalBuildings Int?
-  sawRunDetails  SawRunDetail[]
+  id              String   @id @default(cuid())
+  date            DateTime @default(now()) @map("run_date")
+  averageScore    Float?   @map("avg_score")
+  totalBuildings  Int?     @map("total_buildings")
+  snapshotWeights Json?    @map("snapshot_weights")
+  executedAt      DateTime @default(now())
+
+  sawRunDetails SawRunDetail[]
+
+  @@map("saw_runs")
 }
 
 model SawRunDetail {
-  id         String @id @default(cuid())
-  sawRunId   String
-  buildingId String
-  score      Float
-  priority   Int
-  // detail     String?
+  id           String @id @default(cuid())
+  sawRunId     String @map("run_id")
+  buildingId   String @map("building_id")
+  assessmentId String
+  score        Float
+  priority     Int
+  detail       Json?
 
-  sawRun   SawRun   @relation(fields: [sawRunId], references: [id])
-  building Building @relation(fields: [buildingId], references: [id])
+  sawRun     SawRun     @relation(fields: [sawRunId], references: [id], onDelete: Cascade)
+  building   Building?   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  assessment Assessment? @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("saw_run_details")
+}
+
+model WeightConfiguration {
+  key   String @id
+  name  String
+  type  String // 'cost' atau 'benefit'
+  value Float
+
+  subWeightFrom String? @map("sub_weight_from")
+
+  parent WeightConfiguration? @relation("WeightHierarchy", fields: [subWeightFrom], references: [key], onDelete: Cascade)
+
+  subWeights WeightConfiguration[] @relation("WeightHierarchy")
+
+  @@map("weight_configs")
 }
