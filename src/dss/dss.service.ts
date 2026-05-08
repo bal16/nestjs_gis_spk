@@ -133,9 +133,29 @@ export class DssService {
   }
 
   async calculateAndSave() {
-    const weights = await this.getWeights();
+    const rawWeights = await this.getWeights();
     const alternatives = await this.buildingService.findAllWithAssessment();
     const assessmentMatrix = this.mapBuildingsToAssessment(alternatives);
+    const weights = rawWeights.flatMap(
+      (w: WeightConfiguration & { subWeights?: WeightConfiguration[] }) =>
+        w.subWeights && w.subWeights.length > 0
+          ? w.subWeights.map((sub) => ({
+              key: sub.key,
+              name: sub.name,
+              value: w.value * sub.value,
+              type: sub.type,
+              subWeightFrom: w.key,
+            }))
+          : [
+              {
+                key: w.key,
+                name: w.name,
+                value: w.value,
+                type: w.type,
+                subWeightFrom: null as string | null,
+              },
+            ],
+    );
     const normalizedMatrix = this.normalizeAlternatives(
       assessmentMatrix,
       weights,
@@ -155,7 +175,7 @@ export class DssService {
       data: {
         averageScore,
         totalBuildings,
-        snapshotWeights: weights, // Menyimpan bobot saat ini sebagai history
+        snapshotWeights: rawWeights, // Menyimpan bobot saat ini sebagai history
         executedAt: new Date(),
         sawRunDetails: {
           create: calculatedPreferences.map((result) => ({
@@ -165,7 +185,9 @@ export class DssService {
             priority: result.priority ?? 0,
             detail: {
               c1: result.c1 ?? 0,
-              c2: result.c2 ?? 0,
+              c21: result.c21 ?? 0,
+              c22: result.c22 ?? 0,
+              c23: result.c23 ?? 0,
               c3: result.c3 ?? 0,
               c4: result.c4 ?? 0,
               c5: result.c5 ?? 0,
@@ -189,22 +211,29 @@ export class DssService {
         {
           ...b,
           priority: b.priority ?? 0,
-          c1: assessment.age > 20 ? 3 : assessment.age >= 10 ? 2 : 1,
+          c1: assessment.age,
 
-          c2: Math.round(
-            (assessment.structure + assessment.architecture + assessment.mep) /
-              3,
-          ),
+          c21: assessment.structure,
+          c22: assessment.architecture,
+          c23: assessment.mep,
 
           c3: assessment.utility > 500 ? 3 : assessment.utility >= 100 ? 2 : 1,
 
           c4: assessment.damage,
 
           c5: (() => {
+            // Jika lastMaintenance null, gunakan umur bangunan (age)
+            if (!assessment.lastMaintenance) {
+              return assessment.age;
+            }
+
+            // Jika ada riwayat, hitung selisih tahunnya
             const yearDiff =
-              currentYear -
-              new Date(assessment.lastMaintenance as Date).getFullYear();
-            return yearDiff > 5 ? 3 : yearDiff >= 2 ? 2 : 1;
+              currentYear - new Date(assessment.lastMaintenance).getFullYear();
+
+            // Mencegah nilai minus jika maintenance terjadi di tahun yang sama (currentYear)
+            // Set minimal 0 (belum ada keausan berarti)
+            return Math.max(0, yearDiff);
           })(),
         },
       ];
