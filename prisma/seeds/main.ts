@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Prisma, PrismaClient } from '../../src/generated/prisma/client';
+import { PrismaClient } from '../../src/generated/prisma/client';
 import { HashService } from '../../src/auth/hash.service';
 
 const adapter = new PrismaPg({
@@ -338,6 +338,31 @@ async function main() {
       type: 'benefit',
       value: 0.15,
       subWeightFrom: null,
+      subWeights: [
+        // SUB-KRITERIA (Level 2) - Merujuk ke 'c2'
+        // Perhatikan: Total value di sini harus 1.0 (0.4 + 0.3 + 0.3)
+        {
+          key: 'c21',
+          name: 'Structure',
+          type: 'benefit',
+          value: 0.4,
+          subWeightFrom: 'c2',
+        },
+        {
+          key: 'c22',
+          name: 'Architecture',
+          type: 'benefit',
+          value: 0.3,
+          subWeightFrom: 'c2',
+        },
+        {
+          key: 'c23',
+          name: 'MEP (Mechanical Electrical Plumbing)',
+          type: 'benefit',
+          value: 0.3,
+          subWeightFrom: 'c2',
+        },
+      ],
     },
     {
       key: 'c3',
@@ -360,46 +385,43 @@ async function main() {
       value: 0.2,
       subWeightFrom: null,
     },
-
-    // SUB-KRITERIA (Level 2) - Merujuk ke 'c2'
-    // Perhatikan: Total value di sini harus 1.0 (0.4 + 0.3 + 0.3)
-    {
-      key: 'c21',
-      name: 'Structure',
-      type: 'benefit',
-      value: 0.4,
-      subWeightFrom: 'c2',
-    },
-    {
-      key: 'c22',
-      name: 'Architecture',
-      type: 'benefit',
-      value: 0.3,
-      subWeightFrom: 'c2',
-    },
-    {
-      key: 'c23',
-      name: 'MEP (Mechanical Electrical Plumbing)',
-      type: 'benefit',
-      value: 0.3,
-      subWeightFrom: 'c2',
-    },
   ];
-  await prisma.weightConfiguration.createMany({ data: weightsData });
+  const createManyWeightDatas = weightsData.map((w) => ({
+    key: w.key,
+    name: w.name,
+    type: w.type,
+    value: w.value,
+    subWeightFrom: w.subWeightFrom,
+  }));
+
+  const subWeightsToCreate = weightsData
+    .map((w) => w.subWeights || [])
+    .flat()
+    .map((sw) => ({
+      key: sw.key,
+      name: sw.name,
+      type: sw.type,
+      value: sw.value,
+      subWeightFrom: sw.subWeightFrom,
+    }));
+
+  await prisma.weightConfiguration.createMany({
+    data: [...createManyWeightDatas, ...subWeightsToCreate],
+  });
   console.log(`Created ${weightsData.length} weight configurations`);
 
   // 3. Seed Buildings & Assessments
-  const totalScore = buildingsData.reduce((acc, curr) => acc + curr.score, 0);
-  const avgScore = totalScore / buildingsData.length;
+  // const totalScore = buildingsData.reduce((acc, curr) => acc + curr.score, 0);
+  // const avgScore = totalScore / buildingsData.length;
 
   // 4. Seed 1 SawRun
-  const sawRun = await prisma.sawRun.create({
-    data: {
-      averageScore: avgScore,
-      totalBuildings: buildingsData.length,
-      snapshotWeights: weightsData, // Saving weights active at the time of the run
-    },
-  });
+  // const sawRun = await prisma.sawRun.create({
+  //   data: {
+  //     averageScore: avgScore,
+  //     totalBuildings: buildingsData.length,
+  //     snapshotWeights: weightsData, // Saving weights active at the time of the run
+  //   },
+  // });
 
   let createdBuildingsCount = 0;
   for (const b of buildingsData) {
@@ -434,36 +456,34 @@ async function main() {
       );
     }
 
-    const currentYear = new Date().getFullYear();
-    const c1 = b.criterias.age > 20 ? 3 : b.criterias.age >= 10 ? 2 : 1;
-    const c2 = Math.round(
-      (mapCondition(b.criterias.structure) +
-        mapCondition(b.criterias.architecture) +
-        mapCondition(b.criterias.MEP)) /
-        3,
-    );
-    const utilityVal = mapUtility(b.criterias.utility);
-    const c3 = utilityVal > 500 ? 3 : utilityVal >= 100 ? 2 : 1;
-    const c4 = mapLevel(b.criterias.damage);
-    const yearDiff = currentYear - b.criterias.lastMaintenance.getFullYear();
-    const c5 = yearDiff > 5 ? 3 : yearDiff >= 2 ? 2 : 1;
+    // const currentYear = new Date().getFullYear();
+    // const c1 = b.criterias.age > 20 ? 3 : b.criterias.age >= 10 ? 2 : 1;
+    // const c2 = Math.round(
+    //   (mapCondition(b.criterias.structure) +
+    //     mapCondition(b.criterias.architecture) +
+    //     mapCondition(b.criterias.MEP)) /
+    //     3,
+    // );
+    // const utilityVal = mapUtility(b.criterias.utility);
+    // const c3 = utilityVal > 500 ? 3 : utilityVal >= 100 ? 2 : 1;
+    // const c4 = mapLevel(b.criterias.damage);
+    // const yearDiff = currentYear - b.criterias.lastMaintenance.getFullYear();
+    // const c5 = yearDiff > 5 ? 3 : yearDiff >= 2 ? 2 : 1;
 
-    await prisma.sawRunDetail.create({
-      data: {
-        sawRun: { connect: { id: sawRun.id } },
-        building: { connect: { id: createdBuilding.id } },
-        assessment: { connect: { id: createdAssessment.id } },
-        score: b.score,
-        priority: mapPriority(b.priority),
-        detail: { c1, c2, c3, c4, c5 } as Prisma.InputJsonValue,
-      },
-    });
+    // await prisma.sawRunDetail.create({
+    //   data: {
+    //     sawRun: { connect: { id: sawRun.id } },
+    //     building: { connect: { id: createdBuilding.id } },
+    //     assessment: { connect: { id: createdAssessment.id } },
+    //     score: b.score,
+    //     priority: mapPriority(b.priority),
+    //     detail: { c1, c2, c3, c4, c5 } as Prisma.InputJsonValue,
+    //   },
+    // });
 
     createdBuildingsCount++;
   }
-  console.log(
-    `Created ${createdBuildingsCount} buildings with assessments & SawRunDetails`,
-  );
+  console.log(`Created ${createdBuildingsCount} buildings with assessments`);
   console.log('Seeding Complete!');
 }
 
