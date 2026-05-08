@@ -77,7 +77,7 @@ export class DssController {
 
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
-  @Delete('run/details/:id')
+  @Delete('runs/details/:id')
   async deleteRunDetail(@Param('id') id: string) {
     const isDeleted = await this.dssService.deleteRunDetail(id);
 
@@ -86,7 +86,7 @@ export class DssController {
 
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
-  @Delete('run/:id')
+  @Delete('runs/:id')
   async deleteRun(@Param('id') id: string) {
     const isDeleted = await this.dssService.deleteRun(id);
 
