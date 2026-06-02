@@ -10,13 +10,13 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { BuildingService } from './building.service';
-import { WebResponse } from '../common/responses/web.response';
-import { CreateBuildingDTO } from './dto/create-building.dto';
-import { UpdateBuildingDTO } from './dto/update-building.dto';
-import { CreateAssessmentDTO } from './dto/create-assessment.dto';
-import { UpdateAssessmentDTO } from './dto/update-assessment.dto';
 import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
+import { WebResponse } from '../common/responses/web.response';
+import { BuildingService } from './building.service';
+import { CreateAssessmentDTO } from './dto/create-assessment.dto';
+import { CreateBuildingDTO } from './dto/create-building.dto';
+import { UpdateAssessmentDTO } from './dto/update-assessment.dto';
+import { UpdateBuildingDTO } from './dto/update-building.dto';
 
 @Controller('buildings')
 export class BuildingController {

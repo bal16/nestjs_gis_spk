@@ -91,7 +91,7 @@ describe('BuildingService', () => {
         buildingsWithAssessments,
       );
 
-      const result = await service.findAllWithAssessment();
+      const result = await service.findAllWithAssessments();
 
       expect(result).toEqual(buildingsWithAssessments);
       // expect(mockPrismaService.building.findMany).toHaveBeenCalledWith({

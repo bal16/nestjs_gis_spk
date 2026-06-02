@@ -25,7 +25,7 @@ export class BuildingService {
     });
   }
 
-  findAllWithAssessment() {
+  findAllWithAssessments() {
     return this.prisma.building.findMany({
       include: {
         assessments: {
