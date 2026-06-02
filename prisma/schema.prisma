@@ -41,7 +41,7 @@ model Building {
 
 model Assessment {
   id              String    @id @default(cuid())
-  buildingId      String    @unique @map("building_id")
+  buildingId      String    @map("building_id")
   age             Int
   structure       Int
   architecture    Int

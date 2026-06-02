@@ -40,8 +40,6 @@ function mapUtility(level: string): number {
   return 50;
 }
 
-// tambahkan last maintenance
-// --- REFERENCE DATA ---
 const buildingsData = [
   {
     id: 1,
@@ -51,32 +49,32 @@ const buildingsData = [
     score: 88.5,
     priority: 'Prioritas Tinggi' as const,
     criterias: {
-      age: 20,
+      age: 44,
       structure: 'Rusak Ringan' as const,
       architecture: 'Rusak Berat' as const,
       MEP: 'Rusak Ringan' as const,
       utility: 'Tinggi' as const,
-      damage: 'Tinggi' as const,
-      lastMaintenance: new Date('2022-01-15'), // Contoh tanggal maintenance terakhir
+      damage: 'Sedang' as const,
+      lastMaintenance: new Date('2024-01-01'), // 0 tahun berlalu
     },
   },
-  {
-    id: 2,
-    code: 'PENGHUBUNG',
-    name: 'Gedung Penghubung',
-    location: { lng: 110.40111687803346, lat: -7.051221247727476 },
-    score: 55.0,
-    priority: 'Prioritas Rendah' as const,
-    criterias: {
-      age: 12,
-      structure: 'Baik' as const,
-      architecture: 'Rusak Ringan' as const,
-      MEP: 'Baik' as const,
-      utility: 'Sedang' as const,
-      damage: 'Rendah' as const,
-      lastMaintenance: new Date('2023-03-10'), // Contoh tanggal maintenance terakhir
-    },
-  },
+  // {
+  //   id: 2,
+  //   code: 'PENGHUBUNG',
+  //   name: 'Gedung Penghubung',
+  //   location: { lng: 110.40111687803346, lat: -7.051221247727476 },
+  //   score: 55.0,
+  //   priority: 'Prioritas Rendah' as const,
+  //   criterias: {
+  //     age: 1,
+  //     structure: 'Baik' as const,
+  //     architecture: 'Rusak Ringan' as const,
+  //     MEP: 'Baik' as const,
+  //     utility: 'Sedang' as const,
+  //     damage: 'Rendah' as const,
+  //     lastMaintenance: new Date('2023-03-10'), // Contoh tanggal maintenance terakhir
+  //   },
+  // },
   {
     id: 3,
     code: 'E2',
@@ -85,13 +83,13 @@ const buildingsData = [
     score: 72.8,
     priority: 'Prioritas Sedang' as const,
     criterias: {
-      age: 18,
-      structure: 'Baik' as const,
+      age: 43,
+      structure: 'Rusak Ringan' as const,
       architecture: 'Rusak Ringan' as const,
       MEP: 'Rusak Ringan' as const,
       utility: 'Tinggi' as const,
       damage: 'Sedang' as const,
-      lastMaintenance: new Date('2021-11-05'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2019-01-01'), // 5 tahun berlalu
     },
   },
   {
@@ -102,32 +100,32 @@ const buildingsData = [
     score: 91.0,
     priority: 'Prioritas Tinggi' as const,
     criterias: {
-      age: 25,
+      age: 15,
       structure: 'Rusak Berat' as const,
       architecture: 'Rusak Ringan' as const,
       MEP: 'Rusak Berat' as const,
       utility: 'Tinggi' as const,
       damage: 'Tinggi' as const,
-      lastMaintenance: new Date('2020-06-20'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2018-01-01'), // 6 tahun berlalu
     },
   },
-  {
-    id: 5,
-    code: 'DEKANAT',
-    name: 'Gedung Dekanat FT UNNES',
-    location: { lng: 110.4018771804195, lat: -7.051752672742136 },
-    score: 35.5,
-    priority: 'Prioritas Rendah' as const,
-    criterias: {
-      age: 7,
-      structure: 'Baik' as const,
-      architecture: 'Baik' as const,
-      MEP: 'Baik' as const,
-      utility: 'Tinggi' as const,
-      damage: 'Rendah' as const,
-      lastMaintenance: new Date('2023-01-25'), // Contoh tanggal maintenance terakhir
-    },
-  },
+  // {
+  //   id: 5,
+  //   code: 'DEKANAT',
+  //   name: 'Gedung Dekanat FT UNNES',
+  //   location: { lng: 110.4018771804195, lat: -7.051752672742136 },
+  //   score: 35.5,
+  //   priority: 'Prioritas Rendah' as const,
+  //   criterias: {
+  //     age: 10,
+  //     structure: 'Baik' as const,
+  //     architecture: 'Baik' as const,
+  //     MEP: 'Baik' as const,
+  //     utility: 'Tinggi' as const,
+  //     damage: 'Rendah' as const,
+  //     lastMaintenance: new Date('2023-01-25'), // Contoh tanggal maintenance terakhir
+  //   },
+  // },
   {
     id: 6,
     code: 'E12',
@@ -136,13 +134,13 @@ const buildingsData = [
     score: 68.0,
     priority: 'Prioritas Sedang' as const,
     criterias: {
-      age: 10,
-      structure: 'Baik' as const,
-      architecture: 'Rusak Ringan' as const,
-      MEP: 'Baik' as const,
+      age: 5,
+      structure: 'Rusak Ringan' as const,
+      architecture: 'Baik' as const,
+      MEP: 'Rusak Ringan' as const,
       utility: 'Sedang' as const,
       damage: 'Sedang' as const,
-      lastMaintenance: new Date('2022-08-30'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2020-01-01'), // 4 tahun berlalu
     },
   },
   {
@@ -153,13 +151,13 @@ const buildingsData = [
     score: 77.2,
     priority: 'Prioritas Sedang' as const,
     criterias: {
-      age: 16,
+      age: 40,
       structure: 'Rusak Ringan' as const,
-      architecture: 'Baik' as const,
+      architecture: 'Rusak Ringan' as const,
       MEP: 'Rusak Ringan' as const,
       utility: 'Sedang' as const,
       damage: 'Tinggi' as const,
-      lastMaintenance: new Date('2021-12-15'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2019-01-01'), // 5 tahun berlalu
     },
   },
   {
@@ -170,13 +168,13 @@ const buildingsData = [
     score: 49.0,
     priority: 'Prioritas Rendah' as const,
     criterias: {
-      age: 11,
-      structure: 'Baik' as const,
-      architecture: 'Rusak Ringan' as const,
-      MEP: 'Baik' as const,
+      age: 42,
+      structure: 'Rusak Ringan' as const,
+      architecture: 'Baik' as const,
+      MEP: 'Rusak Ringan' as const,
       utility: 'Sedang' as const,
       damage: 'Rendah' as const,
-      lastMaintenance: new Date('2023-02-20'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2021-01-01'), // 3 tahun berlalu
     },
   },
   {
@@ -187,13 +185,13 @@ const buildingsData = [
     score: 82.0,
     priority: 'Prioritas Tinggi' as const,
     criterias: {
-      age: 19,
+      age: 41,
       structure: 'Rusak Ringan' as const,
-      architecture: 'Rusak Ringan' as const,
+      architecture: 'Baik' as const,
       MEP: 'Rusak Ringan' as const,
       utility: 'Tinggi' as const,
-      damage: 'Tinggi' as const,
-      lastMaintenance: new Date('2020-09-10'), // Contoh tanggal maintenance terakhir
+      damage: 'Sedang' as const,
+      lastMaintenance: new Date('2018-01-01'), // 6 tahun berlalu
     },
   },
   {
@@ -204,13 +202,13 @@ const buildingsData = [
     score: 63.5,
     priority: 'Prioritas Sedang' as const,
     criterias: {
-      age: 13,
-      structure: 'Baik' as const,
+      age: 39,
+      structure: 'Rusak Ringan' as const,
       architecture: 'Rusak Ringan' as const,
-      MEP: 'Baik' as const,
-      utility: 'Sedang' as const,
+      MEP: 'Rusak Berat' as const,
+      utility: 'Rendah' as const,
       damage: 'Sedang' as const,
-      lastMaintenance: new Date('2022-05-18'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2020-01-01'), // 4 tahun berlalu
     },
   },
   {
@@ -221,13 +219,13 @@ const buildingsData = [
     score: 51.5,
     priority: 'Prioritas Rendah' as const,
     criterias: {
-      age: 9,
-      structure: 'Baik' as const,
-      architecture: 'Baik' as const,
+      age: 36,
+      structure: 'Rusak Ringan' as const,
+      architecture: 'Rusak Ringan' as const,
       MEP: 'Rusak Ringan' as const,
-      utility: 'Rendah' as const,
+      utility: 'Sedang' as const,
       damage: 'Rendah' as const,
-      lastMaintenance: new Date('2023-04-15'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2021-01-01'), // 3 tahun berlalu
     },
   },
   {
@@ -238,13 +236,13 @@ const buildingsData = [
     score: 79.0,
     priority: 'Prioritas Sedang' as const,
     criterias: {
-      age: 15,
+      age: 37,
       structure: 'Rusak Ringan' as const,
       architecture: 'Rusak Ringan' as const,
-      MEP: 'Baik' as const,
-      utility: 'Tinggi' as const,
+      MEP: 'Rusak Berat' as const,
+      utility: 'Sedang' as const,
       damage: 'Sedang' as const,
-      lastMaintenance: new Date('2021-10-05'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2019-01-01'), // 5 tahun berlalu
     },
   },
   {
@@ -255,32 +253,32 @@ const buildingsData = [
     score: 95.0,
     priority: 'Prioritas Tinggi' as const,
     criterias: {
-      age: 28,
+      age: 38,
       structure: 'Rusak Berat' as const,
       architecture: 'Rusak Berat' as const,
       MEP: 'Rusak Berat' as const,
       utility: 'Tinggi' as const,
-      damage: 'Tinggi' as const,
-      lastMaintenance: new Date('2019-05-30'), // Contoh tanggal maintenance terakhir
+      damage: 'Sedang' as const,
+      lastMaintenance: new Date('2023-01-01'), // 1 tahun berlalu
     },
   },
-  {
-    id: 14,
-    code: 'PKM',
-    name: 'Gedung PKM',
-    location: { lng: 110.4030788005404, lat: -7.0519802015514825 },
-    score: 84.3,
-    priority: 'Prioritas Tinggi' as const,
-    criterias: {
-      age: 17,
-      structure: 'Rusak Ringan' as const,
-      architecture: 'Rusak Ringan' as const,
-      MEP: 'Rusak Berat' as const,
-      utility: 'Tinggi' as const,
-      damage: 'Tinggi' as const,
-      lastMaintenance: new Date('2020-11-25'), // Contoh tanggal maintenance terakhir
-    },
-  },
+  // {
+  //   id: 14,
+  //   code: 'PKM',
+  //   name: 'Gedung PKM',
+  //   location: { lng: 110.4030788005404, lat: -7.0519802015514825 },
+  //   score: 84.3,
+  //   priority: 'Prioritas Tinggi' as const,
+  //   criterias: {
+  //     age: 17,
+  //     structure: 'Rusak Ringan' as const,
+  //     architecture: 'Rusak Ringan' as const,
+  //     MEP: 'Rusak Berat' as const,
+  //     utility: 'Tinggi' as const,
+  //     damage: 'Tinggi' as const,
+  //     lastMaintenance: new Date('2020-11-25'), // Contoh tanggal maintenance terakhir
+  //   },
+  // },
   {
     id: 15,
     code: 'E10',
@@ -289,13 +287,13 @@ const buildingsData = [
     score: 42.0,
     priority: 'Prioritas Rendah' as const,
     criterias: {
-      age: 6,
-      structure: 'Baik' as const,
-      architecture: 'Baik' as const,
-      MEP: 'Baik' as const,
+      age: 18,
+      structure: 'Rusak Ringan' as const,
+      architecture: 'Rusak Ringan' as const,
+      MEP: 'Rusak Ringan' as const,
       utility: 'Sedang' as const,
       damage: 'Rendah' as const,
-      lastMaintenance: new Date('2023-03-05'), // Contoh tanggal maintenance terakhir
+      lastMaintenance: new Date('2021-01-01'), // 3 tahun berlalu
     },
   },
 ];
@@ -329,14 +327,14 @@ async function main() {
       key: 'c1',
       name: 'Age',
       type: 'benefit',
-      value: 0.15,
+      value: 0.2,
       subWeightFrom: null,
     },
     {
       key: 'c2',
       name: 'Physical Condition',
       type: 'benefit',
-      value: 0.15,
+      value: 0.3,
       subWeightFrom: null,
       subWeights: [
         // SUB-KRITERIA (Level 2) - Merujuk ke 'c2'
@@ -375,7 +373,7 @@ async function main() {
       key: 'c4',
       name: 'Damage Severity',
       type: 'benefit',
-      value: 0.4,
+      value: 0.2,
       subWeightFrom: null,
     },
     {
@@ -441,6 +439,7 @@ async function main() {
             mep: mapCondition(b.criterias.MEP),
             utility: mapUtility(b.criterias.utility),
             damage: mapLevel(b.criterias.damage),
+            lastMaintenance: b.criterias.lastMaintenance,
           },
         },
       },
