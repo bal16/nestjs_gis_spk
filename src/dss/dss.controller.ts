@@ -10,10 +10,10 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { DssService } from './dss.service';
-import { WebResponse } from '../common/responses/web.response';
-import { BatchUpdateWeightsDTO } from './dto/update-weights.dto';
 import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
+import { WebResponse } from '../common/responses/web.response';
+import { DssService } from './dss.service';
+import { BatchUpdateWeightsDTO } from './dto/update-weights.dto';
 
 @Controller('dss')
 export class DssController {
@@ -70,9 +70,9 @@ export class DssController {
   @UseGuards(AccessTokenGuard)
   @Post('calculate')
   async calculate() {
-    const results = await this.dssService.calculateAndSave();
+    const isCreated = await this.dssService.calculateAndSave();
 
-    return new WebResponse('Success', results, HttpStatus.OK);
+    return new WebResponse('Success', isCreated, HttpStatus.OK);
   }
 
   @HttpCode(HttpStatus.OK)

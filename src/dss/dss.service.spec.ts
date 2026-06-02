@@ -350,7 +350,7 @@ describe('DssService', () => {
       ];
 
       jest.spyOn(service, 'getWeights').mockResolvedValue(mockWeights);
-      mockBuildingService.findAllWithAssessment.mockResolvedValue(
+      mockBuildingService.findAllWithAssessments.mockResolvedValue(
         mockAlternatives,
       );
       mockPrismaService.sawRun.create.mockResolvedValue(mockSawRun);

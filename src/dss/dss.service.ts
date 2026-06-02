@@ -134,7 +134,7 @@ export class DssService {
 
   async calculateAndSave() {
     const rawWeights = await this.getWeights();
-    const alternatives = await this.buildingService.findAllWithAssessment();
+    const alternatives = await this.buildingService.findAllWithAssessments();
     const assessmentMatrix = this.mapBuildingsToAssessment(alternatives);
     const weights = rawWeights.flatMap(
       (w: WeightConfiguration & { subWeights?: WeightConfiguration[] }) =>
@@ -182,7 +182,8 @@ export class DssService {
             buildingId: result.id, // result.id dari building
             assessmentId: result.assessments[0].id, // Ambil ID assessment yang dipakai
             score: result.preference, // Hasil hitung SAW
-            priority: result.priority ?? 0,
+            priority:
+              result.preference > 0.8 ? 3 : result.preference > 0.5 ? 2 : 1,
             detail: {
               c1: result.c1 ?? 0,
               c21: result.c21 ?? 0,
@@ -222,17 +223,13 @@ export class DssService {
           c4: assessment.damage,
 
           c5: (() => {
-            // Jika lastMaintenance null, gunakan umur bangunan (age)
             if (!assessment.lastMaintenance) {
               return assessment.age;
             }
 
-            // Jika ada riwayat, hitung selisih tahunnya
             const yearDiff =
               currentYear - new Date(assessment.lastMaintenance).getFullYear();
 
-            // Mencegah nilai minus jika maintenance terjadi di tahun yang sama (currentYear)
-            // Set minimal 0 (belum ada keausan berarti)
             return Math.max(0, yearDiff);
           })(),
         },
