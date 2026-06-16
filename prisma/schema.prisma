@@ -75,7 +75,7 @@ model SawRunDetail {
   id           String @id @default(cuid())
   sawRunId     String @map("run_id")
   buildingId   String @map("building_id")
-  assessmentId String
+  assessmentId String @map("assessment_id")
   score        Float
   priority     Int
   detail       Json?
