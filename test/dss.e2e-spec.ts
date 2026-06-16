@@ -253,16 +253,16 @@ describe('DssModule', () => {
       });
     });
 
-    describe('DELETE /dss/run/details/:id', () => {
+    describe('DELETE /dss/runs/details/:id', () => {
       it('should reject unauthenticated requests', () => {
         return request(app.getHttpServer())
-          .delete('/dss/run/details/some-id')
+          .delete('/dss/runs/details/some-id')
           .expect(401);
       });
 
       it('should delete a run detail', async () => {
         const res = await request(app.getHttpServer())
-          .delete(`/dss/run/details/${createdRunDetailId}`)
+          .delete(`/dss/runs/details/${createdRunDetailId}`)
           .set('Authorization', `Bearer ${accessToken}`)
           .expect(200);
 
@@ -270,16 +270,16 @@ describe('DssModule', () => {
       });
     });
 
-    describe('DELETE /dss/run/:id', () => {
+    describe('DELETE /dss/runs/:id', () => {
       it('should reject unauthenticated requests', () => {
         return request(app.getHttpServer())
-          .delete('/dss/run/some-id')
+          .delete('/dss/runs/some-id')
           .expect(401);
       });
 
       it('should delete a run', async () => {
         const res = await request(app.getHttpServer())
-          .delete(`/dss/run/${createdRunId}`)
+          .delete(`/dss/runs/${createdRunId}`)
           .set('Authorization', `Bearer ${accessToken}`)
           .expect(200);
 
