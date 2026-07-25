@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { JwtPayload } from '../auth/dto/jwt.dto';
+import type { JwtPayload } from '../auth/entities/jwt-payload.entity';
 import type { Prisma } from 'src/generated/prisma/client';
 // import { Prisma } from 'src/generated/prisma';
 

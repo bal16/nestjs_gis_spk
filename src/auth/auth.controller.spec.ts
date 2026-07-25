@@ -9,7 +9,7 @@ import { AccessTokenGuard } from './strategies/accessToken.guard';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import { LoginUser } from './entities/login.entity';
-import { RegisteredUser } from './dto/registerd-user.dto';
+import { RegisteredUser } from './entities/registered-user.entity';
 import { CurrentUser } from './entities/current.entity';
 import { WebResponse } from '../common/responses/web.response';
 import type { CustomRequest } from '../common/type';

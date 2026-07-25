@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { RefreshTokenGuard } from './refreshToken.guard';
-import { JwtPayload } from '../dto/jwt.dto';
+import { JwtPayload } from '../entities/jwt-payload.entity';
 
 describe('RefreshTokenGuard', () => {
   let guard: RefreshTokenGuard;
@@ -55,7 +55,7 @@ describe('RefreshTokenGuard', () => {
       const payload: JwtPayload = {
         sub: 'user-id',
         email: 'test@test.com',
-        admin: false,
+        isAdmin: false,
       };
       const mockContext = createMockExecutionContext({
         authorization: `Bearer ${token}`,

@@ -12,12 +12,12 @@ import { Prisma, type User } from '../generated/prisma/client';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registeration.dto';
 import { LoginUser } from './entities/login.entity';
-import { RegisteredUser } from './dto/registerd-user.dto';
+import { RegisteredUser } from './entities/registered-user.entity';
 import { CurrentUser } from './entities/current.entity';
 
 import { UserService } from '../user/user.service';
 import { EnvironmentVariables } from '../common/env';
-import { JwtPayload } from './dto/jwt.dto';
+import { JwtPayload } from './entities/jwt-payload.entity';
 
 @Injectable()
 export class AuthService {

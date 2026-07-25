@@ -1,10 +1,18 @@
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UpdateWeightItemDTO {
   @IsString()
+  @IsNotEmpty()
   key: string;
 
   @IsNumber()
+  @IsNotEmpty()
   value: number;
 
   @IsArray()
