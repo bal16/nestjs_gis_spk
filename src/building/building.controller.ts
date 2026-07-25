@@ -17,6 +17,8 @@ import { CreateAssessmentDTO } from './dto/create-assessment.dto';
 import { CreateBuildingDTO } from './dto/create-building.dto';
 import { UpdateAssessmentDTO } from './dto/update-assessment.dto';
 import { UpdateBuildingDTO } from './dto/update-building.dto';
+import { BuildingEntity } from './entities/building.entity';
+import { AssessmentEntity } from './entities/assessment.entity';
 
 @Controller('buildings')
 export class BuildingController {
@@ -24,7 +26,7 @@ export class BuildingController {
 
   @HttpCode(HttpStatus.OK)
   @Get()
-  async findAll() {
+  async findAll(): Promise<WebResponse<BuildingEntity[]>> {
     const buildings = await this.buildingService.findAll();
 
     return new WebResponse('Success', buildings, HttpStatus.OK);
@@ -33,7 +35,9 @@ export class BuildingController {
   @UseGuards(AccessTokenGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post()
-  async create(@Body() createBuildingDTO: CreateBuildingDTO) {
+  async create(
+    @Body() createBuildingDTO: CreateBuildingDTO,
+  ): Promise<WebResponse<BuildingEntity>> {
     const buildings = await this.buildingService.create(createBuildingDTO);
 
     return new WebResponse(
@@ -49,7 +53,7 @@ export class BuildingController {
   async update(
     @Body() updateBuildingDTO: UpdateBuildingDTO,
     @Param('id') id: string,
-  ) {
+  ): Promise<WebResponse<BuildingEntity>> {
     const buildings = await this.buildingService.update(updateBuildingDTO, id);
 
     return new WebResponse(
@@ -62,7 +66,7 @@ export class BuildingController {
   @UseGuards(AccessTokenGuard)
   @HttpCode(HttpStatus.OK)
   @Delete(':id')
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string): Promise<WebResponse<unknown>> {
     const isDeleted = await this.buildingService.delete(id);
 
     return new WebResponse(
@@ -75,7 +79,9 @@ export class BuildingController {
   @UseGuards(AccessTokenGuard)
   @HttpCode(HttpStatus.OK)
   @Get(':code/assessments')
-  async findAssessments(@Param('code') code: string) {
+  async findAssessments(
+    @Param('code') code: string,
+  ): Promise<WebResponse<BuildingEntity | null>> {
     const assessments = await this.buildingService.findOneWithAssessments(code);
 
     return new WebResponse('Success', assessments, HttpStatus.OK);
@@ -87,7 +93,7 @@ export class BuildingController {
   async createAssessment(
     @Param('code') id: string,
     @Body() createAssessmentDTO: CreateAssessmentDTO,
-  ) {
+  ): Promise<WebResponse<AssessmentEntity>> {
     const assessment = await this.buildingService.createAssessment(
       id,
       createAssessmentDTO,
@@ -107,7 +113,7 @@ export class BuildingController {
     @Param('code') code: string,
     @Param('assessmentId') assessmentId: string,
     @Body() updateAssessmentDTO: UpdateAssessmentDTO,
-  ) {
+  ): Promise<WebResponse<AssessmentEntity>> {
     const assessment = await this.buildingService.updateAssessment(
       code,
       assessmentId,
@@ -124,7 +130,9 @@ export class BuildingController {
   @UseGuards(AccessTokenGuard)
   @HttpCode(HttpStatus.OK)
   @Delete('/assessments/:assessmentId')
-  async deleteAssessment(@Param('assessmentId') assessmentId: string) {
+  async deleteAssessment(
+    @Param('assessmentId') assessmentId: string,
+  ): Promise<WebResponse<unknown>> {
     const isDeleted = await this.buildingService.deleteAssessment(assessmentId);
 
     return new WebResponse(
@@ -134,3 +142,4 @@ export class BuildingController {
     );
   }
 }
+
