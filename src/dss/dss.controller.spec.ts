@@ -256,7 +256,7 @@ describe('DssController', () => {
 
       expect(result).toBeInstanceOf(WebResponse);
       expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(result.message).toBe('Success');
+      expect(result.message).toBe('Weights updated successfully');
       expect(result.data).toEqual(true);
       // expect(mockDssService.updateWeights).toHaveBeenCalledWith(dto);
     });
@@ -270,7 +270,7 @@ describe('DssController', () => {
 
       expect(result).toBeInstanceOf(WebResponse);
       expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(result.message).toBe('Success');
+      expect(result.message).toBe('Calculation executed successfully');
       expect(result.data).toEqual(true);
     });
   });
@@ -283,7 +283,7 @@ describe('DssController', () => {
 
       expect(result).toBeInstanceOf(WebResponse);
       expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(result.message).toBe('Success');
+      expect(result.message).toBe('Run detail deleted successfully');
       expect(result.data).toEqual(true);
       // expect(mockDssService.deleteRunDetail).toHaveBeenCalledWith('detail-1');
     });
@@ -297,7 +297,7 @@ describe('DssController', () => {
 
       expect(result).toBeInstanceOf(WebResponse);
       expect(result.statusCode).toBe(HttpStatus.OK);
-      expect(result.message).toBe('Success');
+      expect(result.message).toBe('Run deleted successfully');
       expect(result.data).toEqual(true);
       // expect(mockDssService.deleteRun).toHaveBeenCalledWith('run-1');
     });

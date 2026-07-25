@@ -45,7 +45,7 @@ export class AuthController {
     const user = await this.authService.register(RegistrationDTO);
 
     return new WebResponse(
-      'User successfully registered',
+      'User registered successfully',
       user,
       HttpStatus.CREATED,
     );

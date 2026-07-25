@@ -87,7 +87,7 @@ describe('AuthController', () => {
 
       expect(result).toBeInstanceOf(WebResponse);
       expect(result.statusCode).toBe(HttpStatus.CREATED);
-      expect(result.message).toBe('User successfully registered');
+      expect(result.message).toBe('User registered successfully');
       expect(result.data).toEqual(registeredUser);
     });
   });
