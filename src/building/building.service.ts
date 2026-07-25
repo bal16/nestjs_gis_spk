@@ -4,14 +4,15 @@ import type { CreateBuildingDTO } from './dto/create-building.dto';
 import type { UpdateBuildingDTO } from './dto/update-building.dto';
 import type { CreateAssessmentDTO } from './dto/create-assessment.dto';
 import type { UpdateAssessmentDTO } from './dto/update-assessment.dto';
+import { BuildingEntity } from './entities/building.entity';
+import { AssessmentEntity } from './entities/assessment.entity';
 
 @Injectable()
 export class BuildingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    // return this.prisma.building.findMany();
-    return this.prisma.building.findMany({
+  async findAll(): Promise<BuildingEntity[]> {
+    const buildings = await this.prisma.building.findMany({
       include: {
         assessments: true,
         sawRunDetails: {
@@ -23,6 +24,8 @@ export class BuildingService {
         },
       },
     });
+
+    return buildings.map((b) => new BuildingEntity(b));
   }
 
   findAllWithAssessments() {
@@ -36,69 +39,79 @@ export class BuildingService {
     });
   }
 
-  create(data: CreateBuildingDTO) {
-    return this.prisma.building.create({
+  async create(data: CreateBuildingDTO): Promise<BuildingEntity> {
+    const building = await this.prisma.building.create({
       data,
     });
+
+    return new BuildingEntity(building);
   }
 
-  update(data: UpdateBuildingDTO, id: string) {
-    return this.prisma.building.update({
+  async update(data: UpdateBuildingDTO, id: string): Promise<BuildingEntity> {
+    const building = await this.prisma.building.update({
       where: {
         id,
       },
       data,
     });
+
+    return new BuildingEntity(building);
   }
 
-  delete(id: string) {
+  async delete(id: string) {
     return this.prisma.building.delete({ where: { id } });
   }
 
-  findOneWithAssessments(code: string) {
-    return this.prisma.building.findFirst({
+  async findOneWithAssessments(code: string): Promise<BuildingEntity | null> {
+    const building = await this.prisma.building.findFirst({
       where: { code },
       include: { assessments: true },
     });
+
+    return building ? new BuildingEntity(building) : null;
   }
 
   async createAssessment(
     code: string,
     createAssessmentDTO: CreateAssessmentDTO,
-  ) {
+  ): Promise<AssessmentEntity> {
     const buiilding = await this.prisma.building.findFirst({
       where: { code },
       select: { id: true },
     });
 
-    return this.prisma.assessment.create({
+    const assessment = await this.prisma.assessment.create({
       data: {
         ...createAssessmentDTO,
         buildingId: buiilding!.id,
       },
     });
+
+    return new AssessmentEntity(assessment);
   }
 
   async updateAssessment(
     code: string,
     assessmentId: string,
     updateAssessmentDTO: UpdateAssessmentDTO,
-  ) {
+  ): Promise<AssessmentEntity> {
     const buiilding = await this.prisma.building.findFirst({
       where: { code },
       select: { id: true },
     });
 
-    return this.prisma.assessment.update({
+    const assessment = await this.prisma.assessment.update({
       where: { id: assessmentId },
       data: {
         ...updateAssessmentDTO,
         buildingId: buiilding!.id,
       },
     });
+
+    return new AssessmentEntity(assessment);
   }
 
-  deleteAssessment(assessmentId: string) {
+  async deleteAssessment(assessmentId: string) {
     return this.prisma.assessment.delete({
       where: { id: assessmentId },
     });

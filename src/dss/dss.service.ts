@@ -4,6 +4,8 @@ import { type BatchUpdateWeightsDTO } from './dto/update-weights.dto';
 import { BuildingService } from '../building/building.service';
 import type { WeightConfiguration } from 'src/generated/prisma/client';
 import type { BuildingWithAssessment } from 'src/common/type';
+import { SawRunEntity } from './entities/saw-run.entity';
+import { WeightConfigurationEntity } from './entities/weight-configuration.entity';
 
 @Injectable()
 export class DssService {
@@ -12,8 +14,8 @@ export class DssService {
     private readonly buildingService: BuildingService,
   ) {}
 
-  async findAllResults() {
-    return this.prisma.sawRun.findMany({
+  async findAllResults(): Promise<SawRunEntity[]> {
+    const runs = await this.prisma.sawRun.findMany({
       include: {
         sawRunDetails: {
           include: { building: true },
@@ -21,10 +23,12 @@ export class DssService {
       },
       orderBy: { executedAt: 'desc' },
     });
+
+    return runs.map((r) => new SawRunEntity(r));
   }
 
-  async getResultById(id: string) {
-    return this.prisma.sawRun.findUnique({
+  async getResultById(id: string): Promise<SawRunEntity | null> {
+    const run = await this.prisma.sawRun.findUnique({
       where: { id },
       include: {
         sawRunDetails: {
@@ -35,9 +39,12 @@ export class DssService {
         },
       },
     });
+
+    return run ? new SawRunEntity(run) : null;
   }
-  async getLastResult() {
-    return this.prisma.sawRun.findFirst({
+
+  async getLastResult(): Promise<SawRunEntity | null> {
+    const run = await this.prisma.sawRun.findFirst({
       include: {
         sawRunDetails: {
           include: {
@@ -50,26 +57,19 @@ export class DssService {
         executedAt: 'desc',
       },
     });
+
+    return run ? new SawRunEntity(run) : null;
   }
 
-  // async findAllResults() {
-  //   return this.prisma.building.findMany({
-  //     include: {
-  //       assessments: true,
-  //       sawRunDetails: {
-  //         orderBy: { sawRun: { executedAt: 'desc' } },
-  //         take: 1,
-  //       },
-  //     },
-  //   });
-  // }
-
-  getWeights() {
-    return this.prisma.weightConfiguration.findMany({
+  async getWeights(): Promise<WeightConfigurationEntity[]> {
+    const weights = await this.prisma.weightConfiguration.findMany({
       where: { subWeightFrom: null },
       include: { subWeights: true },
     });
+
+    return weights.map((w) => new WeightConfigurationEntity(w));
   }
+
 
   // private getMaxValue(alternatives: Building[], key: string): number {
   //   const values = alternatives
@@ -175,7 +175,7 @@ export class DssService {
       data: {
         averageScore,
         totalBuildings,
-        snapshotWeights: rawWeights, // Menyimpan bobot saat ini sebagai history
+        snapshotWeights: rawWeights as any, // Menyimpan bobot saat ini sebagai history
         executedAt: new Date(),
         sawRunDetails: {
           create: calculatedPreferences.map((result) => ({

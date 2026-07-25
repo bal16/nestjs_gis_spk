@@ -14,6 +14,8 @@ import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
 import { WebResponse } from '../common/responses/web.response';
 import { DssService } from './dss.service';
 import { BatchUpdateWeightsDTO } from './dto/update-weights.dto';
+import { SawRunEntity } from './entities/saw-run.entity';
+import { WeightConfigurationEntity } from './entities/weight-configuration.entity';
 
 @Controller('dss')
 export class DssController {
@@ -29,7 +31,7 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Get('runs')
-  async findAllResults() {
+  async findAllResults(): Promise<WebResponse<SawRunEntity[]>> {
     const data = await this.dssService.findAllResults();
     return new WebResponse('Success', data, HttpStatus.OK);
   }
@@ -37,7 +39,7 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Get('runs/lastest')
-  async getLastResults() {
+  async getLastResults(): Promise<WebResponse<SawRunEntity | null>> {
     const data = await this.dssService.getLastResult();
     return new WebResponse('Success', data, HttpStatus.OK);
   }
@@ -45,7 +47,9 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Get('runs/:id')
-  async getResultById(@Param('id') id: string) {
+  async getResultById(
+    @Param('id') id: string,
+  ): Promise<WebResponse<SawRunEntity | null>> {
     const data = await this.dssService.getResultById(id);
     return new WebResponse('Success', data, HttpStatus.OK);
   }
@@ -53,7 +57,7 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Get('weights')
-  async getWeights() {
+  async getWeights(): Promise<WebResponse<WeightConfigurationEntity[]>> {
     const weightDatas = await this.dssService.getWeights();
     return new WebResponse('Success', weightDatas, HttpStatus.OK);
   }
@@ -61,7 +65,9 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Put('weights')
-  async updateWeights(@Body() updateWeightsDTO: BatchUpdateWeightsDTO) {
+  async updateWeights(
+    @Body() updateWeightsDTO: BatchUpdateWeightsDTO,
+  ): Promise<WebResponse<boolean>> {
     const isUpdated = await this.dssService.updateWeights(updateWeightsDTO);
     return new WebResponse('Success', isUpdated, HttpStatus.OK);
   }
@@ -69,7 +75,7 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Post('calculate')
-  async calculate() {
+  async calculate(): Promise<WebResponse<boolean>> {
     const isCreated = await this.dssService.calculateAndSave();
 
     return new WebResponse('Success', isCreated, HttpStatus.OK);
@@ -78,7 +84,9 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Delete('runs/details/:id')
-  async deleteRunDetail(@Param('id') id: string) {
+  async deleteRunDetail(
+    @Param('id') id: string,
+  ): Promise<WebResponse<boolean>> {
     const isDeleted = await this.dssService.deleteRunDetail(id);
 
     return new WebResponse('Success', isDeleted, HttpStatus.OK);
@@ -87,7 +95,7 @@ export class DssController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
   @Delete('runs/:id')
-  async deleteRun(@Param('id') id: string) {
+  async deleteRun(@Param('id') id: string): Promise<WebResponse<boolean>> {
     const isDeleted = await this.dssService.deleteRun(id);
 
     return new WebResponse('Success', isDeleted, HttpStatus.OK);
