@@ -677,7 +677,7 @@ paths:
               example:
                 statusCode: 201
                 success: true
-                message: "User successfully registered"
+                message: "User registered successfully"
                 data:
                   id: "clxxxxxxxxxxxxxxxxxx"
                   name: "admin_main"
@@ -1416,7 +1416,7 @@ paths:
               example:
                 statusCode: 200
                 success: true
-                message: "Success"
+                message: "Weights updated successfully"
                 data: true
         '400':
           description: Weight validation failed (total != 1.0)
@@ -1473,7 +1473,7 @@ paths:
               example:
                 statusCode: 200
                 success: true
-                message: "Success"
+                message: "Calculation executed successfully"
                 data: true
         '400':
           description: No buildings with assessments found
@@ -1667,7 +1667,7 @@ paths:
               example:
                 statusCode: 200
                 success: true
-                message: "Success"
+                message: "Run deleted successfully"
                 data: true
         '401':
           description: Unauthorized
@@ -1709,7 +1709,7 @@ paths:
               example:
                 statusCode: 200
                 success: true
-                message: "Success"
+                message: "Run detail deleted successfully"
                 data: true
         '401':
           description: Unauthorized

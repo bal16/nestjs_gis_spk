@@ -145,7 +145,7 @@ Content-Type: application/json
 {
   "statusCode": 201,
   "success": true,
-  "message": "User successfully registered",
+  "message": "User registered successfully",
   "data": {
     "id": "clxxxxxxxxxxxxxxxxxx",
     "name": "admin_main",
@@ -804,7 +804,7 @@ Content-Type: application/json
 {
   "statusCode": 200,
   "success": true,
-  "message": "Success",
+  "message": "Weights updated successfully",
   "data": true
 }
 ```
@@ -867,7 +867,7 @@ _(No request body)_
 {
   "statusCode": 200,
   "success": true,
-  "message": "Success",
+  "message": "Calculation executed successfully",
   "data": true
 }
 ```
@@ -1033,7 +1033,7 @@ Authorization: Bearer <access_token>
 {
   "statusCode": 200,
   "success": true,
-  "message": "Success",
+  "message": "Run deleted successfully",
   "data": true
 }
 ```
@@ -1057,7 +1057,7 @@ Authorization: Bearer <access_token>
 {
   "statusCode": 200,
   "success": true,
-  "message": "Success",
+  "message": "Run detail deleted successfully",
   "data": true
 }
 ```

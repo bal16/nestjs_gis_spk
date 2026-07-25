@@ -28,24 +28,24 @@ export class DssController {
 
   //   return new WebResponse('Success', results, HttpStatus.OK);
   // }
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Get('runs')
   async findAllResults(): Promise<WebResponse<SawRunEntity[]>> {
     const data = await this.dssService.findAllResults();
     return new WebResponse('Success', data, HttpStatus.OK);
   }
 
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Get('runs/lastest')
   async getLastResults(): Promise<WebResponse<SawRunEntity | null>> {
     const data = await this.dssService.getLastResult();
     return new WebResponse('Success', data, HttpStatus.OK);
   }
 
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Get('runs/:id')
   async getResultById(
     @Param('id') id: string,
@@ -54,50 +54,66 @@ export class DssController {
     return new WebResponse('Success', data, HttpStatus.OK);
   }
 
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Get('weights')
   async getWeights(): Promise<WebResponse<WeightConfigurationEntity[]>> {
     const weightDatas = await this.dssService.getWeights();
     return new WebResponse('Success', weightDatas, HttpStatus.OK);
   }
 
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Put('weights')
   async updateWeights(
     @Body() updateWeightsDTO: BatchUpdateWeightsDTO,
   ): Promise<WebResponse<boolean>> {
     const isUpdated = await this.dssService.updateWeights(updateWeightsDTO);
-    return new WebResponse('Success', isUpdated, HttpStatus.OK);
+    return new WebResponse(
+      'Weights updated successfully',
+      isUpdated,
+      HttpStatus.OK,
+    );
   }
 
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Post('calculate')
   async calculate(): Promise<WebResponse<boolean>> {
     const isCreated = await this.dssService.calculateAndSave();
 
-    return new WebResponse('Success', isCreated, HttpStatus.OK);
+    return new WebResponse(
+      'Calculation executed successfully',
+      isCreated,
+      HttpStatus.OK,
+    );
   }
 
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Delete('runs/details/:id')
   async deleteRunDetail(
     @Param('id') id: string,
   ): Promise<WebResponse<boolean>> {
     const isDeleted = await this.dssService.deleteRunDetail(id);
 
-    return new WebResponse('Success', isDeleted, HttpStatus.OK);
+    return new WebResponse(
+      'Run detail deleted successfully',
+      isDeleted,
+      HttpStatus.OK,
+    );
   }
 
-  @HttpCode(HttpStatus.OK)
   @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
   @Delete('runs/:id')
   async deleteRun(@Param('id') id: string): Promise<WebResponse<boolean>> {
     const isDeleted = await this.dssService.deleteRun(id);
 
-    return new WebResponse('Success', isDeleted, HttpStatus.OK);
+    return new WebResponse(
+      'Run deleted successfully',
+      isDeleted,
+      HttpStatus.OK,
+    );
   }
 }

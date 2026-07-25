@@ -812,7 +812,7 @@
                 "example": {
                   "statusCode": 201,
                   "success": true,
-                  "message": "User successfully registered",
+                  "message": "User registered successfully",
                   "data": {
                     "id": "clxxxxxxxxxxxxxxxxxx",
                     "name": "admin_main",
@@ -1935,7 +1935,7 @@
                 "example": {
                   "statusCode": 200,
                   "success": true,
-                  "message": "Success",
+                  "message": "Weights updated successfully",
                   "data": true
                 }
               }
@@ -2005,7 +2005,7 @@
                 "example": {
                   "statusCode": 200,
                   "success": true,
-                  "message": "Success",
+                  "message": "Calculation executed successfully",
                   "data": true
                 }
               }
@@ -2305,7 +2305,7 @@
                 "example": {
                   "statusCode": 200,
                   "success": true,
-                  "message": "Success",
+                  "message": "Run deleted successfully",
                   "data": true
                 }
               }
@@ -2371,7 +2371,7 @@
                 "example": {
                   "statusCode": 200,
                   "success": true,
-                  "message": "Success",
+                  "message": "Run detail deleted successfully",
                   "data": true
                 }
               }
