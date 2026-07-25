@@ -70,23 +70,6 @@ export class DssService {
     return weights.map((w) => new WeightConfigurationEntity(w));
   }
 
-
-  // private getMaxValue(alternatives: Building[], key: string): number {
-  //   const values = alternatives
-  //     .map((alt) => (alt as Record<string, unknown>)[key])
-  //     .filter((value): value is number => typeof value === 'number');
-
-  //   return values.length > 0 ? Math.max(...values) : 0;
-  // }
-
-  // private getMinValue(alternatives: Building[], key: string): number {
-  //   const values = alternatives
-  //     .map((alt) => (alt as Record<string, unknown>)[key])
-  //     .filter((value): value is number => typeof value === 'number');
-
-  //   return values.length > 0 ? Math.min(...values) : 0;
-  // }
-
   async updateWeights(dto: BatchUpdateWeightsDTO) {
     const totalWeights = dto.weights.reduce((sum, item) => sum + item.value, 0);
 
@@ -165,7 +148,6 @@ export class DssService {
       weights,
     );
 
-    // await this.saveResults(calculatedPreferences);
     const totalBuildings = calculatedPreferences.length;
     const averageScore =
       calculatedPreferences.reduce((acc, curr) => acc + curr.preference, 0) /

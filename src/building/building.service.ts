@@ -75,7 +75,7 @@ export class BuildingService {
     code: string,
     createAssessmentDTO: CreateAssessmentDTO,
   ): Promise<AssessmentEntity> {
-    const buiilding = await this.prisma.building.findFirst({
+    const building = await this.prisma.building.findFirst({
       where: { code },
       select: { id: true },
     });
@@ -83,7 +83,7 @@ export class BuildingService {
     const assessment = await this.prisma.assessment.create({
       data: {
         ...createAssessmentDTO,
-        buildingId: buiilding!.id,
+        buildingId: building!.id,
       },
     });
 
@@ -95,7 +95,7 @@ export class BuildingService {
     assessmentId: string,
     updateAssessmentDTO: UpdateAssessmentDTO,
   ): Promise<AssessmentEntity> {
-    const buiilding = await this.prisma.building.findFirst({
+    const building = await this.prisma.building.findFirst({
       where: { code },
       select: { id: true },
     });
@@ -104,7 +104,7 @@ export class BuildingService {
       where: { id: assessmentId },
       data: {
         ...updateAssessmentDTO,
-        buildingId: buiilding!.id,
+        buildingId: building!.id,
       },
     });
 

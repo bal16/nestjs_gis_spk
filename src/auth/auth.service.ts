@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { Prisma, type User } from '../generated/prisma/client';
 import { LoginDTO } from './dto/login.dto';
-import { RegistrationDTO } from './dto/registeration.dto';
+import { RegistrationDTO } from './dto/registration.dto';
 import { LoginUser } from './entities/login.entity';
 import { RegisteredUser } from './entities/registered-user.entity';
 import { CurrentUser } from './entities/current.entity';

@@ -2100,10 +2100,71 @@
         }
       }
     },
-    "/dss/runs/lastest": {
+    "/dss/runs/latest": {
       "get": {
         "summary": "Get latest SAW calculation run",
-        "description": "Returns the single most recent SAW run record, including full run details\nwith building and assessment data. Note the intentional typo in the URL: `lastest` (not `latest`).\nRequires authentication.\n",
+        "description": "Returns the single most recent SAW run record, including full run details\nwith building and assessment data.\nRequires authentication.\n",
+        "tags": [
+          "DSS Engine"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Latest run detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/WebResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SawRun"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "statusCode": 200,
+                  "success": true,
+                  "message": "Success",
+                  "data": {
+                    "id": "clxxxxxxxxxxxxxxxxxx",
+                    "executedAt": "2025-11-29T12:00:00Z",
+                    "totalBuildings": 15,
+                    "averageScore": 0.612,
+                    "sawRunDetails": []
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dss/runs/lastest": {
+      "get": {
+        "summary": "Get latest SAW calculation run (Deprecated Alias)",
+        "deprecated": true,
+        "description": "Returns the single most recent SAW run record.\nDeprecated: Use `/dss/runs/latest` instead. Maintained for backward compatibility.\nRequires authentication.\n",
         "tags": [
           "DSS Engine"
         ],

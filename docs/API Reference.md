@@ -32,7 +32,8 @@
    - [PUT /dss/weights](#put-dssweights)
    - [POST /dss/calculate](#post-dsscalculate)
    - [GET /dss/runs](#get-dssruns)
-   - [GET /dss/runs/lastest](#get-dssrunslatest)
+   - [GET /dss/runs/latest](#get-dssrunslatest)
+   - [GET /dss/runs/lastest (Deprecated)](#get-dssrunslastest-deprecated)
    - [GET /dss/runs/:id](#get-dssrunsid)
    - [DELETE /dss/runs/:id](#delete-dssrunsid)
    - [DELETE /dss/runs/details/:id](#delete-dssrunsdetailsid)
@@ -925,11 +926,24 @@ Authorization: Bearer <access_token>
 
 ---
 
-### GET /dss/runs/lastest
+### GET /dss/runs/latest
 
 Get only the **most recent** SAW run with full detail including building and assessment data.
 
-> ⚠️ Note: The URL path contains an intentional typo: `lastest` (not `latest`). Use exactly this spelling.
+**Request:**
+
+```http
+GET /dss/runs/latest
+Authorization: Bearer <access_token>
+```
+
+**Response — 200 OK:** Same structure as a single `SawRun` object (see `/dss/runs/:id`).
+
+---
+
+### GET /dss/runs/lastest (Deprecated)
+
+> ⚠️ **Deprecated Alias:** `/dss/runs/lastest` is maintained for backward compatibility. Please use `GET /dss/runs/latest` instead.
 
 **Request:**
 
@@ -938,7 +952,7 @@ GET /dss/runs/lastest
 Authorization: Bearer <access_token>
 ```
 
-**Response — 200 OK:** Same structure as a single `SawRun` object (see `/dss/runs/:id`).
+**Response — 200 OK:** Identical to `/dss/runs/latest`.
 
 ---
 
@@ -1209,7 +1223,8 @@ Custom error message from `DssService` when weight totals are invalid:
 | `PUT` | `/dss/weights` | ✅ | Update weights |
 | `POST` | `/dss/calculate` | ✅ | Trigger SAW calculation |
 | `GET` | `/dss/runs` | ✅ | List all SAW runs |
-| `GET` | `/dss/runs/lastest` | ✅ | Get latest SAW run |
+| `GET` | `/dss/runs/latest` | ✅ | Get latest SAW run |
+| `GET` | `/dss/runs/lastest` | ⚠️ | Deprecated alias for `/dss/runs/latest` |
 | `GET` | `/dss/runs/:id` | ✅ | Get SAW run by ID |
 | `DELETE` | `/dss/runs/:id` | ✅ | Delete SAW run |
 | `DELETE` | `/dss/runs/details/:id` | ✅ | Delete SAW run detail |

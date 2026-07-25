@@ -7,7 +7,7 @@ import { AuthService } from './auth.service';
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';
 import { AccessTokenGuard } from './strategies/accessToken.guard';
 import { LoginDTO } from './dto/login.dto';
-import { RegistrationDTO } from './dto/registeration.dto';
+import { RegistrationDTO } from './dto/registration.dto';
 import { LoginUser } from './entities/login.entity';
 import { RegisteredUser } from './entities/registered-user.entity';
 import { CurrentUser } from './entities/current.entity';
