@@ -13,7 +13,7 @@ import {
 import { AuthService } from './auth.service';
 
 import { LoginDTO } from './dto/login.dto';
-import { RegistrationDTO } from './dto/registeration.dto';
+import { RegistrationDTO } from './dto/registration.dto';
 
 import { WebResponse } from '../common/responses/web.response';
 import { LoginUser } from './entities/login.entity';

@@ -21,13 +21,6 @@ import { WeightConfigurationEntity } from './entities/weight-configuration.entit
 export class DssController {
   constructor(private readonly dssService: DssService) {}
 
-  // @HttpCode(HttpStatus.OK)
-  // @Get('results')
-  // async getResults() {
-  //   const results = await this.dssService.getLastResults();
-
-  //   return new WebResponse('Success', results, HttpStatus.OK);
-  // }
   @UseGuards(AccessTokenGuard)
   @HttpCode(HttpStatus.OK)
   @Get('runs')
@@ -38,7 +31,7 @@ export class DssController {
 
   @UseGuards(AccessTokenGuard)
   @HttpCode(HttpStatus.OK)
-  @Get('runs/lastest')
+  @Get(['runs/latest', 'runs/lastest'])
   async getLastResults(): Promise<WebResponse<SawRunEntity | null>> {
     const data = await this.dssService.getLastResult();
     return new WebResponse('Success', data, HttpStatus.OK);

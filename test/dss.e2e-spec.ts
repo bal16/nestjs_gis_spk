@@ -213,14 +213,26 @@ describe('DssModule', () => {
       });
     });
 
-    describe('GET /dss/runs/lastest', () => {
+    describe('GET /dss/runs/latest & GET /dss/runs/lastest', () => {
       it('should reject unauthenticated requests', () => {
         return request(app.getHttpServer())
-          .get('/dss/runs/lastest')
+          .get('/dss/runs/latest')
           .expect(401);
       });
 
-      it('should retrieve the latest run', async () => {
+      it('should retrieve the latest run via primary endpoint /dss/runs/latest', async () => {
+        const res = await request(app.getHttpServer())
+          .get('/dss/runs/latest')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .expect(200);
+
+        expect((res.body as WebResponse<{ id: string }>).data).toHaveProperty(
+          'id',
+          createdRunId,
+        );
+      });
+
+      it('should retrieve the latest run via deprecated alias endpoint /dss/runs/lastest', async () => {
         const res = await request(app.getHttpServer())
           .get('/dss/runs/lastest')
           .set('Authorization', `Bearer ${accessToken}`)

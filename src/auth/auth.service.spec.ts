@@ -13,7 +13,7 @@ import { UserService } from '../user/user.service';
 import { HashService } from './hash.service';
 import { Prisma, User } from '../generated/prisma/client';
 import { LoginDTO } from './dto/login.dto';
-import { RegistrationDTO } from './dto/registeration.dto';
+import { RegistrationDTO } from './dto/registration.dto';
 import { ConfigService } from '@nestjs/config';
 import { LoginUser } from './entities/login.entity';
 import { RegisteredUser } from './entities/registered-user.entity';
