@@ -1,4 +1,5 @@
 name: spk-gis
+# name: spk-gis2
 services:
   postgres:
     image: postgres:16-alpine # You can specify a different PostgreSQL version
@@ -8,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     ports:
-      - '5432:5432' # Map host port 5432 to container port 5432
+      - "5432:5432" # Map host port 5432 to container port 5432
     volumes:
       - pgdata:/var/lib/postgresql/data # Persist data in a named volume
 

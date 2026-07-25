@@ -1,13 +1,41 @@
 # TODO
 
+## URGENT!\
+
 ## NEW
 
-- [x] accessToken.guard.spec.ts errors
 - [ ] cause guard startegies is similar why not use one and add variants?
+
+- [ ] prisma schema for DB
+  - [x] Building Model
+  - [x] Criteria Model
+  - [x] Ref Condition Model
+  - [x] Ref Level Model
+  - [ ] migrate it!
+
+- [x] accessToken.guard.spec.ts errors
 
 ## RECENT
 
-- [ ] Auth Feature
+- [ ] Buildings Feature
+  - [ ] Get Buildings API (POST /buildings)
+    - [x] Controller
+    - [x] Service
+    - [ ] Test
+
+- [ ] Assessments Feature
+  - [ ] Get Buildings API (POST /buildings/:id/assessment)
+    - [x] Controller
+    - [x] Service
+    - [ ] Test
+
+- [ ] DSS Feature
+  - [ ] Get Buildings API (POST /dss)
+    - [ ] Controller
+    - [ ] Service
+    - [ ] Test
+
+- [x] Auth Feature
   - [x] Login API (POST /auth/login)
     - [x] Controller
     - [x] Service

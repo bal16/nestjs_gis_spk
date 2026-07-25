@@ -1,0 +1,1719 @@
+openapi: 3.0.3
+info:
+  title: DSS Building Maintenance API (FT UNNES)
+  description: |
+    API documentation for the Decision Support System (DSS) for Building Maintenance
+    Prioritization at Fakultas Teknik, Universitas Negeri Semarang.
+
+    **Base URL:** `http://localhost:3001`
+
+    ## System Logic (SAW Method)
+
+    The system uses the **Simple Additive Weighting (SAW)** method:
+
+    1. **Criteria:**
+       - `C1` — Building age (cost criterion — older = higher priority)
+       - `C2` — Physical condition, composed of 3 sub-criteria:
+         - `C21` — Structural condition (benefit: lower score = worse condition)
+         - `C22` — Architectural condition (benefit)
+         - `C23` — MEP (Mechanical, Electrical & Plumbing) condition (benefit)
+       - `C3` — Utility / number of users (benefit)
+       - `C4` — Damage impact level (benefit)
+       - `C5` — Years since last maintenance (cost)
+
+    2. **Normalization:** Min/Max normalization on a 0–1 scale.
+       - **Benefit criterion:** `normalized = value / max_value`
+       - **Cost criterion:** `normalized = min_value / value`
+
+    3. **Weighting:** `FinalScore = Σ (normalized_criteria × weight)`
+
+    4. **Sub-weight resolution:** Each sub-weight of C2 is multiplied by the parent
+       weight before summing.
+
+    ## Authentication
+
+    All protected endpoints require a Bearer JWT token in the `Authorization` header:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+
+  version: 1.3.0
+  contact:
+    name: API Support
+    email: admin@ft.unnes.ac.id
+
+servers:
+  - url: http://localhost:3001
+    description: Development Server
+
+tags:
+  - name: Auth
+    description: Authentication — login, register, token refresh, and session management
+  - name: Buildings
+    description: Building CRUD management (list is public; create/update/delete require auth)
+  - name: Assessments
+    description: Assessment criteria per building (C1–C5 input data)
+  - name: DSS Engine
+    description: SAW calculation engine — weights, triggers, and run history
+  - name: Public
+    description: Public endpoints (no token required)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Access Token. Obtain from `POST /auth/login`.
+
+  schemas:
+    # -------------------------
+    # Standard Envelope
+    # -------------------------
+    WebResponse:
+      type: object
+      required:
+        - statusCode
+        - success
+        - message
+      properties:
+        statusCode:
+          type: integer
+          example: 200
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Success"
+        data:
+          nullable: true
+          description: Response payload; null for delete/logout operations.
+
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Validation Error"
+        error:
+          type: string
+          example: "Bad Request"
+
+    # -------------------------
+    # Auth
+    # -------------------------
+    RegistrationRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          description: Alphanumeric username (used as display name)
+          example: "admin_main"
+        email:
+          type: string
+          format: email
+          example: "admin@ft.unnes.ac.id"
+        password:
+          type: string
+          description: Alphanumeric only (validated by class-validator @IsAlphanumeric)
+          example: "StrongPass123"
+        avatar:
+          type: string
+          nullable: true
+          description: Optional avatar URL
+          example: "https://example.com/avatar.png"
+
+    RegisteredUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        name:
+          type: string
+          example: "admin_main"
+        email:
+          type: string
+          format: email
+          example: "admin@ft.unnes.ac.id"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@ft.unnes.ac.id"
+        password:
+          type: string
+          example: "StrongPass123"
+
+    LoginUser:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: Short-lived JWT access token
+          example: "eyJhbGci..."
+        refreshToken:
+          type: string
+          description: Long-lived JWT refresh token (7-day expiry)
+          example: "eyJhbGci..."
+        username:
+          type: string
+          example: "admin_main"
+        isAdmin:
+          type: boolean
+          example: false
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        name:
+          type: string
+          example: "admin_main"
+        email:
+          type: string
+          format: email
+          example: "admin@ft.unnes.ac.id"
+        isAdmin:
+          type: boolean
+          example: false
+
+    # -------------------------
+    # Buildings
+    # -------------------------
+    Building:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        code:
+          type: string
+          description: Unique building code (e.g. campus building identifier)
+          example: "E1"
+        name:
+          type: string
+          maxLength: 20
+          example: "Gedung E1"
+        latitude:
+          type: number
+          format: float
+          example: -7.050123
+        longitude:
+          type: number
+          format: float
+          example: 110.409876
+        score:
+          type: number
+          format: float
+          nullable: true
+          description: Latest SAW score (populated after a calculation run)
+          example: 0.875
+        priority:
+          type: integer
+          nullable: true
+          description: "Priority tier: 1 (low), 2 (medium), 3 (high)"
+          example: 3
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-29T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-29T10:00:00Z"
+        assessments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assessment'
+        sawRunDetails:
+          type: array
+          items:
+            $ref: '#/components/schemas/SawRunDetail'
+
+    CreateBuildingRequest:
+      type: object
+      required:
+        - code
+        - name
+        - latitude
+        - longitude
+      properties:
+        code:
+          type: string
+          example: "E5"
+        name:
+          type: string
+          maxLength: 20
+          example: "Gedung E5"
+        latitude:
+          type: number
+          format: float
+          example: -7.0503
+        longitude:
+          type: number
+          format: float
+          example: 110.4094
+        score:
+          type: number
+          format: float
+          nullable: true
+          example: null
+        priority:
+          type: integer
+          nullable: true
+          example: null
+
+    UpdateBuildingRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "E1-REV"
+        name:
+          type: string
+          maxLength: 20
+          example: "Gedung E1 Revisi"
+        latitude:
+          type: number
+          format: float
+          example: -7.050123
+        longitude:
+          type: number
+          format: float
+          example: 110.409876
+        score:
+          type: number
+          format: float
+          nullable: true
+        priority:
+          type: integer
+          nullable: true
+
+    # -------------------------
+    # Assessment
+    # -------------------------
+    Assessment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        buildingId:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        age:
+          type: integer
+          description: "C1 — Building age in years"
+          example: 15
+        structure:
+          type: integer
+          description: "C21 — Structural condition score"
+          example: 3
+        architecture:
+          type: integer
+          description: "C22 — Architectural condition score"
+          example: 4
+        mep:
+          type: integer
+          description: "C23 — MEP condition score"
+          example: 2
+        utility:
+          type: integer
+          description: "C3 — Number of daily users / utility level"
+          example: 350
+        damage:
+          type: integer
+          description: "C4 — Damage impact score"
+          example: 4
+        lastMaintenance:
+          type: string
+          format: date-time
+          nullable: true
+          description: "C5 — Date of last maintenance; null if never maintained"
+          example: "2022-06-15T00:00:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-20T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-20T10:00:00Z"
+
+    CreateAssessmentRequest:
+      type: object
+      required:
+        - age
+        - structure
+        - architecture
+        - mep
+        - utility
+        - damage
+      properties:
+        age:
+          type: integer
+          description: "C1 — Building age in years"
+          example: 15
+        structure:
+          type: integer
+          description: "C21 — Structural condition"
+          example: 3
+        architecture:
+          type: integer
+          description: "C22 — Architectural condition"
+          example: 4
+        mep:
+          type: integer
+          description: "C23 — MEP condition"
+          example: 2
+        utility:
+          type: integer
+          description: "C3 — Number of daily users / utility count"
+          example: 350
+        damage:
+          type: integer
+          description: "C4 — Damage impact score"
+          example: 4
+        lastMaintenance:
+          type: string
+          format: date-time
+          nullable: true
+          description: "C5 input — Date of last maintenance (ISO 8601)"
+          example: "2022-06-15T00:00:00Z"
+
+    UpdateAssessmentRequest:
+      type: object
+      description: All fields are optional for partial updates
+      properties:
+        age:
+          type: integer
+          example: 16
+        structure:
+          type: integer
+          example: 2
+        architecture:
+          type: integer
+          example: 4
+        mep:
+          type: integer
+          example: 3
+        utility:
+          type: integer
+          example: 400
+        damage:
+          type: integer
+          example: 3
+        lastMaintenance:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2023-01-10T00:00:00Z"
+
+    # -------------------------
+    # DSS / SAW Runs
+    # -------------------------
+    WeightItem:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          description: Weight key (e.g. c1, c2, c21, c22, c23, c3, c4, c5)
+          example: "c1"
+        name:
+          type: string
+          example: "Usia Bangunan"
+        type:
+          type: string
+          enum: [cost, benefit]
+          example: "cost"
+        value:
+          type: number
+          format: float
+          description: Weight value (0.0 – 1.0)
+          example: 0.20
+        subWeightFrom:
+          type: string
+          nullable: true
+          description: Parent weight key if this is a sub-weight; null for top-level
+          example: null
+        subWeights:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeightItem'
+          description: Sub-weights (only for hierarchical criteria like C2)
+
+    UpdateWeightItemRequest:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          example: "c1"
+        value:
+          type: number
+          format: float
+          example: 0.20
+        subWeights:
+          type: array
+          nullable: true
+          items:
+            type: object
+            required:
+              - key
+              - value
+            properties:
+              key:
+                type: string
+                example: "c21"
+              value:
+                type: number
+                format: float
+                example: 0.33
+
+    BatchUpdateWeightsRequest:
+      type: object
+      required:
+        - weights
+      properties:
+        weights:
+          type: array
+          description: |
+            Array of top-level weight objects. Total of all `value` fields **must equal 1.0**.
+            If a criterion has sub-weights, the sub-weights total must also equal 1.0.
+          items:
+            $ref: '#/components/schemas/UpdateWeightItemRequest'
+          example:
+            - key: "c1"
+              value: 0.20
+            - key: "c2"
+              value: 0.35
+              subWeights:
+                - key: "c21"
+                  value: 0.30
+                - key: "c22"
+                  value: 0.30
+                - key: "c23"
+                  value: 0.40
+            - key: "c3"
+              value: 0.20
+            - key: "c4"
+              value: 0.15
+            - key: "c5"
+              value: 0.10
+
+    SawRunDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        sawRunId:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        buildingId:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        assessmentId:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        score:
+          type: number
+          format: float
+          description: Final SAW score for this building in this run
+          example: 0.875
+        priority:
+          type: integer
+          description: "Priority tier: 1=low (<0.5), 2=medium (0.5–0.8), 3=high (>0.8)"
+          example: 3
+        detail:
+          type: object
+          description: Frozen normalized criterion values at time of calculation
+          properties:
+            c1:
+              type: number
+              format: float
+              example: 0.75
+            c21:
+              type: number
+              format: float
+              example: 0.60
+            c22:
+              type: number
+              format: float
+              example: 0.80
+            c23:
+              type: number
+              format: float
+              example: 0.40
+            c3:
+              type: number
+              format: float
+              example: 1.00
+            c4:
+              type: number
+              format: float
+              example: 0.80
+            c5:
+              type: number
+              format: float
+              example: 0.90
+        building:
+          $ref: '#/components/schemas/Building'
+        assessment:
+          $ref: '#/components/schemas/Assessment'
+
+    SawRun:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        date:
+          type: string
+          format: date-time
+          description: Run date (mapped from `run_date` column)
+          example: "2025-11-29T12:00:00Z"
+        averageScore:
+          type: number
+          format: float
+          nullable: true
+          description: Average SAW score across all buildings in this run
+          example: 0.612
+        totalBuildings:
+          type: integer
+          nullable: true
+          description: Number of buildings processed
+          example: 15
+        snapshotWeights:
+          type: object
+          nullable: true
+          description: Frozen weight configuration at the time of calculation (JSON)
+        executedAt:
+          type: string
+          format: date-time
+          example: "2025-11-29T12:00:00Z"
+        sawRunDetails:
+          type: array
+          items:
+            $ref: '#/components/schemas/SawRunDetail'
+
+# ============================================================
+# PATHS
+# ============================================================
+paths:
+
+  # ============================================================
+  # AUTHENTICATION
+  # ============================================================
+  /auth/register:
+    post:
+      summary: Register a new user
+      description: |
+        Creates a new user account. By default, new accounts are **not admin** (`isAdmin: false`).
+        An admin account must be promoted manually in the database.
+        Password must be **alphanumeric only** (letters and digits, no special characters).
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+            example:
+              username: "admin_main"
+              email: "admin@ft.unnes.ac.id"
+              password: "StrongPass123"
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RegisteredUser'
+              example:
+                statusCode: 201
+                success: true
+                message: "User successfully registered"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  name: "admin_main"
+                  email: "admin@ft.unnes.ac.id"
+        '400':
+          description: Validation error or email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailInUse:
+                  summary: Email already registered
+                  value:
+                    statusCode: 400
+                    success: false
+                    message: "Email already in use"
+                    error: "Bad Request"
+                validationError:
+                  summary: Invalid input fields
+                  value:
+                    statusCode: 400
+                    success: false
+                    message: ["password must contain only letters and numbers"]
+                    error: "Bad Request"
+
+  /auth/login:
+    post:
+      summary: Login and obtain tokens
+      description: |
+        Authenticates a user with email and password.
+        Returns an **access token** (short-lived) and a **refresh token** (7-day expiry).
+        The refresh token is stored server-side and must be presented to `/auth/refresh`.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "admin@ft.unnes.ac.id"
+              password: "StrongPass123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginUser'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  accessToken: "eyJhbGci..."
+                  refreshToken: "eyJhbGci..."
+                  username: "admin_main"
+                  isAdmin: false
+                  id: "clxxxxxxxxxxxxxxxxxx"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 401
+                success: false
+                message: "Invalid credentials"
+                error: "Unauthorized"
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: |
+        Exchanges a valid **refresh token** for a new access token and refresh token pair.
+        The refresh token must be sent in the `Authorization: Bearer <refresh_token>` header.
+        Uses the `RefreshTokenGuard` (a separate JWT strategy that validates against the refresh secret).
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginUser'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  accessToken: "eyJhbGci_new..."
+                  refreshToken: "eyJhbGci_new..."
+                  username: "admin_main"
+                  isAdmin: false
+                  id: "clxxxxxxxxxxxxxxxxxx"
+        '401':
+          description: Refresh token invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      summary: Get current session user
+      description: |
+        Returns profile information of the currently authenticated user.
+        Requires a valid **access token** in the Authorization header.
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CurrentUser'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  name: "admin_main"
+                  email: "admin@ft.unnes.ac.id"
+                  isAdmin: false
+        '401':
+          description: Access token invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/session:
+    delete:
+      summary: Logout (invalidate session)
+      description: |
+        Invalidates the current session by clearing the stored refresh token from the database.
+        Subsequent refresh requests will fail until the user logs in again.
+        Requires a valid **access token**.
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: 'null'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data: null
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================================
+  # BUILDINGS
+  # ============================================================
+  /buildings:
+    get:
+      summary: List all buildings (Public)
+      description: |
+        Returns all buildings including their latest assessment data and the most recent
+        SAW run detail. **This endpoint is public and does not require authentication.**
+        The response includes nested `assessments` and `sawRunDetails` (latest 1 per building).
+      tags: [Buildings]
+      responses:
+        '200':
+          description: Buildings list retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Building'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  - id: "clxxxxxxxxxxxxxxxxxx"
+                    code: "E1"
+                    name: "Gedung E1"
+                    latitude: -7.050123
+                    longitude: 110.409876
+                    score: 0.875
+                    priority: 3
+                    assessments: []
+                    sawRunDetails: []
+
+    post:
+      summary: Create a new building
+      description: Creates a new building record. Requires authentication.
+      tags: [Buildings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBuildingRequest'
+            example:
+              code: "E5"
+              name: "Gedung E5"
+              latitude: -7.0503
+              longitude: 110.4094
+      responses:
+        '201':
+          description: Building created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Building'
+              example:
+                statusCode: 201
+                success: true
+                message: "Building created successfully"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  code: "E5"
+                  name: "Gedung E5"
+                  latitude: -7.0503
+                  longitude: 110.4094
+                  score: null
+                  priority: null
+        '400':
+          description: Validation error (e.g. duplicate code)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /buildings/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: Building CUID (`id` field, not `code`)
+        example: "clxxxxxxxxxxxxxxxxxx"
+
+    put:
+      summary: Update a building
+      description: |
+        Updates one or more fields of a building. Only the provided fields are updated.
+        Requires authentication.
+      tags: [Buildings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBuildingRequest'
+            example:
+              name: "Gedung E1 Revisi"
+              latitude: -7.050200
+              longitude: 110.409900
+      responses:
+        '200':
+          description: Building updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Building'
+              example:
+                statusCode: 200
+                success: true
+                message: "Building updated successfully"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  code: "E1"
+                  name: "Gedung E1 Revisi"
+                  latitude: -7.050200
+                  longitude: 110.409900
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Building not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a building
+      description: |
+        Deletes a building and all cascading records (assessments, SAW run details).
+        Requires authentication.
+      tags: [Buildings]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Building deleted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Building'
+              example:
+                statusCode: 200
+                success: true
+                message: "Building deleted successfully"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  code: "E1"
+                  name: "Gedung E1"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Building not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================================
+  # ASSESSMENTS
+  # ============================================================
+  /buildings/{code}/assessments:
+    parameters:
+      - in: path
+        name: code
+        required: true
+        schema:
+          type: string
+        description: Building **code** (e.g. "E1"), not the CUID id
+        example: "E1"
+
+    get:
+      summary: Get all assessments for a building
+      description: |
+        Returns a building record with all its associated assessment entries.
+        Looks up the building by its unique `code` field.
+        Requires authentication.
+      tags: [Assessments]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Building with assessments
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Building'
+                          - type: object
+                            properties:
+                              assessments:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/Assessment'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  code: "E1"
+                  name: "Gedung E1"
+                  latitude: -7.050123
+                  longitude: 110.409876
+                  assessments:
+                    - id: "clxxxxxxxxxxxxxxxxxx"
+                      buildingId: "clxxxxxxxxxxxxxxxxxx"
+                      age: 15
+                      structure: 3
+                      architecture: 4
+                      mep: 2
+                      utility: 350
+                      damage: 4
+                      lastMaintenance: "2022-06-15T00:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create an assessment for a building
+      description: |
+        Creates a new assessment record for the building identified by `code`.
+        A building can have multiple assessment records over time (history).
+        Requires authentication.
+      tags: [Assessments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssessmentRequest'
+            example:
+              age: 15
+              structure: 3
+              architecture: 4
+              mep: 2
+              utility: 350
+              damage: 4
+              lastMaintenance: "2022-06-15T00:00:00Z"
+      responses:
+        '201':
+          description: Assessment created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Assessment'
+              example:
+                statusCode: 201
+                success: true
+                message: "Assessment created successfully"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  buildingId: "clxxxxxxxxxxxxxxxxxx"
+                  age: 15
+                  structure: 3
+                  architecture: 4
+                  mep: 2
+                  utility: 350
+                  damage: 4
+                  lastMaintenance: "2022-06-15T00:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /buildings/{code}/assessments/{assessmentId}:
+    parameters:
+      - in: path
+        name: code
+        required: true
+        schema:
+          type: string
+        description: Building **code** (e.g. "E1")
+        example: "E1"
+      - in: path
+        name: assessmentId
+        required: true
+        schema:
+          type: string
+        description: Assessment CUID
+        example: "clxxxxxxxxxxxxxxxxxx"
+
+    put:
+      summary: Update an assessment
+      description: |
+        Partially updates an existing assessment record. All fields are optional.
+        Requires authentication.
+      tags: [Assessments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssessmentRequest'
+            example:
+              age: 16
+              structure: 2
+              lastMaintenance: "2023-01-10T00:00:00Z"
+      responses:
+        '200':
+          description: Assessment updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Assessment'
+              example:
+                statusCode: 200
+                success: true
+                message: "Assessment updated successfully"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  buildingId: "clxxxxxxxxxxxxxxxxxx"
+                  age: 16
+                  structure: 2
+                  architecture: 4
+                  mep: 2
+                  utility: 350
+                  damage: 4
+                  lastMaintenance: "2023-01-10T00:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /buildings/assessments/{assessmentId}:
+    parameters:
+      - in: path
+        name: assessmentId
+        required: true
+        schema:
+          type: string
+        description: Assessment CUID to delete
+        example: "clxxxxxxxxxxxxxxxxxx"
+
+    delete:
+      summary: Delete an assessment
+      description: |
+        Permanently deletes a specific assessment record by its ID.
+        Requires authentication.
+      tags: [Assessments]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Assessment deleted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Assessment'
+              example:
+                statusCode: 200
+                success: true
+                message: "Assessment deleted successfully"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================================
+  # DSS ENGINE
+  # ============================================================
+  /dss/weights:
+    get:
+      summary: Get current weight configuration
+      description: |
+        Returns all top-level weight criteria with their sub-weights.
+        The `subWeightFrom: null` filter ensures only parent weights are returned,
+        each with a nested `subWeights` array. Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Weight configuration retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WeightItem'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  - key: "c1"
+                    name: "Usia Bangunan"
+                    type: "cost"
+                    value: 0.20
+                    subWeightFrom: null
+                    subWeights: []
+                  - key: "c2"
+                    name: "Kondisi Fisik"
+                    type: "benefit"
+                    value: 0.35
+                    subWeightFrom: null
+                    subWeights:
+                      - key: "c21"
+                        name: "Struktur"
+                        type: "benefit"
+                        value: 0.30
+                        subWeightFrom: "c2"
+                      - key: "c22"
+                        name: "Arsitektur"
+                        type: "benefit"
+                        value: 0.30
+                        subWeightFrom: "c2"
+                      - key: "c23"
+                        name: "MEP"
+                        type: "benefit"
+                        value: 0.40
+                        subWeightFrom: "c2"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update weight configuration
+      description: |
+        Updates the SAW weight configuration. Validation rules:
+        - Sum of all top-level weight `value` fields **must equal exactly 1.0** (tolerance: 0.0001).
+        - For any criterion with sub-weights, the sum of sub-weight values **must also equal 1.0**.
+
+        Throws `400 Bad Request` if totals are invalid.
+        Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchUpdateWeightsRequest'
+            example:
+              weights:
+                - key: "c1"
+                  value: 0.20
+                - key: "c2"
+                  value: 0.35
+                  subWeights:
+                    - key: "c21"
+                      value: 0.30
+                    - key: "c22"
+                      value: 0.30
+                    - key: "c23"
+                      value: 0.40
+                - key: "c3"
+                  value: 0.20
+                - key: "c4"
+                  value: 0.15
+                - key: "c5"
+                  value: 0.10
+      responses:
+        '200':
+          description: Weights updated (returns `true` on success)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: boolean
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data: true
+        '400':
+          description: Weight validation failed (total != 1.0)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                success: false
+                message: "Total bobot kriteria harus 1.0 (Sekarang: 0.95)"
+                error: "Bad Request"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dss/calculate:
+    post:
+      summary: Trigger SAW calculation
+      description: |
+        Triggers the full SAW calculation pipeline and saves a snapshot to the database.
+
+        **Algorithm steps:**
+        1. Fetch all top-level weights and expand sub-weights (C2 sub-weights are multiplied by parent weight).
+        2. Fetch all buildings that have at least one assessment (latest assessment per building).
+        3. Map each building to a criteria matrix: `{c1, c21, c22, c23, c3, c4, c5}`.
+           - `c3` is bucketed: `utility > 500 → 3`, `utility >= 100 → 2`, else `1`.
+           - `c5` = years since `lastMaintenance`; if never maintained, `c5 = age`.
+        4. Normalize each criterion using Min/Max normalization.
+        5. Calculate final preference score: `Σ (normalized_value × effective_weight)`.
+        6. Assign priority tier: `score > 0.8 → 3 (High)`, `score > 0.5 → 2 (Medium)`, else `1 (Low)`.
+        7. Save a `SawRun` record with `SawRunDetail` for each building.
+
+        Returns `true` on success.
+        Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Calculation completed and saved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: boolean
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data: true
+        '400':
+          description: No buildings with assessments found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dss/runs:
+    get:
+      summary: Get all SAW calculation runs
+      description: |
+        Returns the full list of past SAW calculation runs, ordered by most recent first.
+        Each run includes its `sawRunDetails` with associated building data.
+        Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Run history list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SawRun'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  - id: "clxxxxxxxxxxxxxxxxxx"
+                    executedAt: "2025-11-29T12:00:00Z"
+                    totalBuildings: 15
+                    averageScore: 0.612
+                    snapshotWeights: {}
+                    sawRunDetails: []
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dss/runs/lastest:
+    get:
+      summary: Get latest SAW calculation run
+      description: |
+        Returns the single most recent SAW run record, including full run details
+        with building and assessment data. Note the intentional typo in the URL: `lastest` (not `latest`).
+        Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Latest run detail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SawRun'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  executedAt: "2025-11-29T12:00:00Z"
+                  totalBuildings: 15
+                  averageScore: 0.612
+                  sawRunDetails:
+                    - id: "clxxxxxxxxxxxxxxxxxx"
+                      score: 0.875
+                      priority: 3
+                      detail:
+                        c1: 0.75
+                        c21: 0.60
+                        c22: 0.80
+                        c23: 0.40
+                        c3: 1.00
+                        c4: 0.80
+                        c5: 0.90
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dss/runs/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: SAW Run CUID
+        example: "clxxxxxxxxxxxxxxxxxx"
+
+    get:
+      summary: Get a specific SAW run by ID
+      description: |
+        Returns the full detail of a specific SAW run, including all `sawRunDetails`
+        with their associated building and assessment snapshots.
+        Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: SAW run detail
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SawRun'
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  executedAt: "2025-11-29T12:00:00Z"
+                  totalBuildings: 15
+                  averageScore: 0.612
+                  snapshotWeights: {}
+                  sawRunDetails:
+                    - id: "clxxxxxxxxxxxxxxxxxx"
+                      score: 0.875
+                      priority: 3
+                      building:
+                        code: "E1"
+                        name: "Gedung E1"
+                      assessment:
+                        age: 15
+                        structure: 3
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Run not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a SAW run
+      description: |
+        Permanently deletes a SAW run and all its cascade detail records.
+        Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Run deleted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: boolean
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dss/runs/details/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: SAW Run Detail CUID
+        example: "clxxxxxxxxxxxxxxxxxx"
+
+    delete:
+      summary: Delete a single SAW run detail record
+      description: |
+        Permanently deletes a specific SAW run detail entry (individual building result within a run).
+        Requires authentication.
+      tags: [DSS Engine]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Run detail deleted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: boolean
+              example:
+                statusCode: 200
+                success: true
+                message: "Success"
+                data: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
