@@ -17,7 +17,7 @@ import { RegistrationDTO } from './dto/registeration.dto';
 
 import { WebResponse } from '../common/responses/web.response';
 import { LoginUser } from './entities/login.entity';
-import { RegisteredUser } from './dto/registerd-user.dto';
+import { RegisteredUser } from './entities/registered-user.entity';
 import { CurrentUser } from './entities/current.entity';
 
 import { RefreshTokenGuard } from './strategies/refreshToken.guard';

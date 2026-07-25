@@ -9,7 +9,7 @@ import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables } from '../../common/env';
-import type { JwtPayload } from '../dto/jwt.dto';
+import type { JwtPayload } from '../entities/jwt-payload.entity';
 
 @Injectable()
 export class RefreshTokenGuard implements CanActivate {

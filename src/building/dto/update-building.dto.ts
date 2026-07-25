@@ -1,27 +1,5 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateBuildingDTO } from './create-building.dto';
 
-export class UpdateBuildingDTO {
-  @IsString()
-  @IsOptional()
-  code?: string;
+export class UpdateBuildingDTO extends PartialType(CreateBuildingDTO) {}
 
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @IsNumber()
-  @IsOptional()
-  latitude?: number;
-
-  @IsNumber()
-  @IsOptional()
-  longitude?: number;
-
-  @IsOptional()
-  @IsNumber()
-  score?: number;
-
-  @IsOptional()
-  @IsNumber()
-  priority?: number;
-}
