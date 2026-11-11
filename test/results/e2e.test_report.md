@@ -1,6 +1,6 @@
 # E2E Test Execution Report
 
-**Execution Date:** Wed, 11 Nov 2026 02:58:23 GMT
+**Execution Date:** Wed, 11 Nov 2026 02:58:58 GMT
 
 ## 📊 Test Summary
 
@@ -12,7 +12,7 @@
 | **Total Test Cases** | 48 |
 | **Passed Cases** | 48 ✅ |
 | **Failed Cases** | 0 ❌ |
-| **Duration** | 4.36 seconds |
+| **Duration** | 4.25 seconds |
 
 ---
 
@@ -20,51 +20,51 @@
 
 ### 📁 File: `test/auth.e2e-spec.ts`
 * **Status:** **✅ PASSED**
-* **Duration:** 2.25s
+* **Duration:** 2.26s
 * **Summary:** 12 passed, 0 failed, 12 total
 
 | Module | Endpoint / Context | Test Case | Status | Duration |
 | :--- | :--- | :--- | :---: | :--- |
-| AuthModule | `POST /auth/register` | should reject invalid payload (400) | 🟩 PASS | 116ms |
-| AuthModule | `POST /auth/register` | should register a new user and return 201 | 🟩 PASS | 79ms |
-| AuthModule | `POST /auth/register` | should not register a user with an existing email and return 400 | 🟩 PASS | 189ms |
-| AuthModule | `POST /auth/login` | should reject invalid payload (400) | 🟩 PASS | 72ms |
-| AuthModule | `POST /auth/login` | should not log in with invalid credentials and return 401 | 🟩 PASS | 137ms |
+| AuthModule | `POST /auth/register` | should reject invalid payload (400) | 🟩 PASS | 111ms |
+| AuthModule | `POST /auth/register` | should register a new user and return 201 | 🟩 PASS | 81ms |
+| AuthModule | `POST /auth/register` | should not register a user with an existing email and return 400 | 🟩 PASS | 204ms |
+| AuthModule | `POST /auth/login` | should reject invalid payload (400) | 🟩 PASS | 70ms |
+| AuthModule | `POST /auth/login` | should not log in with invalid credentials and return 401 | 🟩 PASS | 132ms |
 | AuthModule | `POST /auth/login` | should log in a user and return tokens | 🟩 PASS | 132ms |
-| AuthModule | `GET /auth/me` | should reject unauthenticated requests | 🟩 PASS | 136ms |
-| AuthModule | `GET /auth/me` | should get user profile | 🟩 PASS | 131ms |
-| AuthModule | `POST /auth/refresh` | should reject unauthenticated requests | 🟩 PASS | 128ms |
-| AuthModule | `POST /auth/refresh` | should refresh tokens | 🟩 PASS | 131ms |
-| AuthModule | `DELETE /auth/session` | should reject unauthenticated requests | 🟩 PASS | 129ms |
-| AuthModule | `DELETE /auth/session` | should log out user | 🟩 PASS | 131ms |
+| AuthModule | `GET /auth/me` | should reject unauthenticated requests | 🟩 PASS | 126ms |
+| AuthModule | `GET /auth/me` | should get user profile | 🟩 PASS | 128ms |
+| AuthModule | `POST /auth/refresh` | should reject unauthenticated requests | 🟩 PASS | 126ms |
+| AuthModule | `POST /auth/refresh` | should refresh tokens | 🟩 PASS | 130ms |
+| AuthModule | `DELETE /auth/session` | should reject unauthenticated requests | 🟩 PASS | 138ms |
+| AuthModule | `DELETE /auth/session` | should log out user | 🟩 PASS | 129ms |
 
 
 ---
 
 ### 📁 File: `test/dss.e2e-spec.ts`
 * **Status:** **✅ PASSED**
-* **Duration:** 0.77s
+* **Duration:** 0.72s
 * **Summary:** 18 passed, 0 failed, 18 total
 
 | Module | Endpoint / Context | Test Case | Status | Duration |
 | :--- | :--- | :--- | :---: | :--- |
-| DssModule | `/dss ➔ GET /dss/weights` | should reject unauthenticated requests | 🟩 PASS | 13ms |
-| DssModule | `/dss ➔ GET /dss/weights` | should retrieve weights | 🟩 PASS | 10ms |
-| DssModule | `/dss ➔ PUT /dss/weights` | should reject unauthenticated requests | 🟩 PASS | 3ms |
+| DssModule | `/dss ➔ GET /dss/weights` | should reject unauthenticated requests | 🟩 PASS | 10ms |
+| DssModule | `/dss ➔ GET /dss/weights` | should retrieve weights | 🟩 PASS | 8ms |
+| DssModule | `/dss ➔ PUT /dss/weights` | should reject unauthenticated requests | 🟩 PASS | 2ms |
 | DssModule | `/dss ➔ PUT /dss/weights` | should reject invalid payload (total weights sum !== 1.0) with 400 | 🟩 PASS | 2ms |
 | DssModule | `/dss ➔ PUT /dss/weights` | should update weights | 🟩 PASS | 18ms |
 | DssModule | `/dss ➔ POST /dss/calculate` | should reject unauthenticated requests | 🟩 PASS | 3ms |
-| DssModule | `/dss ➔ POST /dss/calculate` | should calculate and save results | 🟩 PASS | 15ms |
-| DssModule | `/dss ➔ GET /dss/runs` | should reject unauthenticated requests | 🟩 PASS | 2ms |
-| DssModule | `/dss ➔ GET /dss/runs` | should retrieve all runs | 🟩 PASS | 8ms |
+| DssModule | `/dss ➔ POST /dss/calculate` | should calculate and save results | 🟩 PASS | 13ms |
+| DssModule | `/dss ➔ GET /dss/runs` | should reject unauthenticated requests | 🟩 PASS | 3ms |
+| DssModule | `/dss ➔ GET /dss/runs` | should retrieve all runs | 🟩 PASS | 5ms |
 | DssModule | `/dss ➔ GET /dss/runs/latest & GET /dss/runs/lastest` | should reject unauthenticated requests | 🟩 PASS | 2ms |
-| DssModule | `/dss ➔ GET /dss/runs/latest & GET /dss/runs/lastest` | should retrieve the latest run via primary endpoint /dss/runs/latest | 🟩 PASS | 12ms |
+| DssModule | `/dss ➔ GET /dss/runs/latest & GET /dss/runs/lastest` | should retrieve the latest run via primary endpoint /dss/runs/latest | 🟩 PASS | 13ms |
 | DssModule | `/dss ➔ GET /dss/runs/latest & GET /dss/runs/lastest` | should retrieve the latest run via deprecated alias endpoint /dss/runs/lastest | 🟩 PASS | 6ms |
-| DssModule | `/dss ➔ GET /dss/runs/:id` | should reject unauthenticated requests | 🟩 PASS | 1ms |
-| DssModule | `/dss ➔ GET /dss/runs/:id` | should retrieve run by id | 🟩 PASS | 10ms |
+| DssModule | `/dss ➔ GET /dss/runs/:id` | should reject unauthenticated requests | 🟩 PASS | 2ms |
+| DssModule | `/dss ➔ GET /dss/runs/:id` | should retrieve run by id | 🟩 PASS | 8ms |
 | DssModule | `/dss ➔ DELETE /dss/runs/details/:id` | should reject unauthenticated requests | 🟩 PASS | 2ms |
 | DssModule | `/dss ➔ DELETE /dss/runs/details/:id` | should delete a run detail | 🟩 PASS | 4ms |
-| DssModule | `/dss ➔ DELETE /dss/runs/:id` | should reject unauthenticated requests | 🟩 PASS | 2ms |
+| DssModule | `/dss ➔ DELETE /dss/runs/:id` | should reject unauthenticated requests | 🟩 PASS | 1ms |
 | DssModule | `/dss ➔ DELETE /dss/runs/:id` | should delete a run | 🟩 PASS | 4ms |
 
 
@@ -72,23 +72,23 @@
 
 ### 📁 File: `test/building.e2e-spec.ts`
 * **Status:** **✅ PASSED**
-* **Duration:** 0.65s
+* **Duration:** 0.68s
 * **Summary:** 17 passed, 0 failed, 17 total
 
 | Module | Endpoint / Context | Test Case | Status | Duration |
 | :--- | :--- | :--- | :---: | :--- |
-| BuildingModule | `/buildings ➔ POST /buildings` | should reject unauthenticated requests | 🟩 PASS | 10ms |
+| BuildingModule | `/buildings ➔ POST /buildings` | should reject unauthenticated requests | 🟩 PASS | 11ms |
 | BuildingModule | `/buildings ➔ POST /buildings` | should reject invalid payload (400) | 🟩 PASS | 4ms |
 | BuildingModule | `/buildings ➔ POST /buildings` | should create a new building | 🟩 PASS | 6ms |
 | BuildingModule | `/buildings ➔ GET /buildings` | should retrieve all buildings | 🟩 PASS | 14ms |
-| BuildingModule | `/buildings ➔ PUT /buildings/:id` | should reject unauthenticated requests | 🟩 PASS | 4ms |
+| BuildingModule | `/buildings ➔ PUT /buildings/:id` | should reject unauthenticated requests | 🟩 PASS | 5ms |
 | BuildingModule | `/buildings ➔ PUT /buildings/:id` | should update the building | 🟩 PASS | 6ms |
 | BuildingModule | `/buildings ➔ POST /buildings/:code/assessments` | should reject unauthenticated requests | 🟩 PASS | 3ms |
-| BuildingModule | `/buildings ➔ POST /buildings/:code/assessments` | should reject invalid payload (400) | 🟩 PASS | 3ms |
-| BuildingModule | `/buildings ➔ POST /buildings/:code/assessments` | should create an assessment | 🟩 PASS | 6ms |
+| BuildingModule | `/buildings ➔ POST /buildings/:code/assessments` | should reject invalid payload (400) | 🟩 PASS | 4ms |
+| BuildingModule | `/buildings ➔ POST /buildings/:code/assessments` | should create an assessment | 🟩 PASS | 7ms |
 | BuildingModule | `/buildings ➔ GET /buildings/:code/assessments` | should reject unauthenticated requests | 🟩 PASS | 2ms |
 | BuildingModule | `/buildings ➔ GET /buildings/:code/assessments` | should retrieve assessments for a building | 🟩 PASS | 4ms |
-| BuildingModule | `/buildings ➔ PUT /buildings/:code/assessments/:assessmentId` | should reject unauthenticated requests | 🟩 PASS | 2ms |
+| BuildingModule | `/buildings ➔ PUT /buildings/:code/assessments/:assessmentId` | should reject unauthenticated requests | 🟩 PASS | 3ms |
 | BuildingModule | `/buildings ➔ PUT /buildings/:code/assessments/:assessmentId` | should update an assessment | 🟩 PASS | 6ms |
 | BuildingModule | `/buildings ➔ DELETE /buildings/assessments/:assessmentId` | should reject unauthenticated requests | 🟩 PASS | 2ms |
 | BuildingModule | `/buildings ➔ DELETE /buildings/assessments/:assessmentId` | should delete an assessment | 🟩 PASS | 4ms |
@@ -100,12 +100,12 @@
 
 ### 📁 File: `test/app.e2e-spec.ts`
 * **Status:** **✅ PASSED**
-* **Duration:** 0.48s
+* **Duration:** 0.40s
 * **Summary:** 1 passed, 0 failed, 1 total
 
 | Module | Endpoint / Context | Test Case | Status | Duration |
 | :--- | :--- | :--- | :---: | :--- |
-| App (e2e) | `-` | / (GET) | 🟩 PASS | 145ms |
+| App (e2e) | `-` | / (GET) | 🟩 PASS | 95ms |
 
 
 ---
