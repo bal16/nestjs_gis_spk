@@ -1,7 +1,6 @@
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { Logger, PinoLogger } from 'nestjs-pino';
-import { apiReference } from '@scalar/nestjs-api-reference';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as YAML from 'yaml';
@@ -40,6 +39,7 @@ async function bootstrap() {
       const yamlFile = fs.readFileSync(openApiFilePath, 'utf8');
       const openApiDocument = YAML.parse(yamlFile);
 
+      const { apiReference } = await import('@scalar/nestjs-api-reference');
       app.use(
         '/api/docs',
         apiReference({
