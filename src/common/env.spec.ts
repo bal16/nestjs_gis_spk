@@ -17,6 +17,8 @@ describe('Environment Configuration', () => {
     delete process.env.JWT_REFRESH_SECRET;
     delete process.env.PORT;
     delete process.env.CORS_ORIGIN;
+    delete process.env.DIRECT_URL;
+    delete process.env.DATABASE_URL;
 
     // We must import the module here to re-evaluate it with the modified process.env
     const config = (envConfig as unknown as () => EnvironmentVariables)();
@@ -26,6 +28,7 @@ describe('Environment Configuration', () => {
       JWT_REFRESH_SECRET: 'jwt-refresh-secret',
       PORT: 3000,
       CORS_ORIGIN: 'http://localhost:3000',
+      DIRECT_URL: undefined,
     });
   });
 
@@ -35,6 +38,7 @@ describe('Environment Configuration', () => {
     process.env.JWT_REFRESH_SECRET = 'my-custom-refresh-secret';
     process.env.PORT = '8080';
     process.env.CORS_ORIGIN = 'https://app.ft.unnes.ac.id';
+    process.env.DIRECT_URL = 'postgresql://user:pass@direct.neon.tech/db';
 
     const config = (envConfig as unknown as () => EnvironmentVariables)();
 
@@ -43,6 +47,7 @@ describe('Environment Configuration', () => {
       JWT_REFRESH_SECRET: 'my-custom-refresh-secret',
       PORT: 8080,
       CORS_ORIGIN: 'https://app.ft.unnes.ac.id',
+      DIRECT_URL: 'postgresql://user:pass@direct.neon.tech/db',
     });
   });
 });
