@@ -125,7 +125,10 @@ describe('InvitationService', () => {
         createdAt: new Date(),
       };
       prisma.invitationToken.findUnique.mockResolvedValue(mock);
-      const result = await service.validateToken('valid-token', 'test@example.com');
+      const result = await service.validateToken(
+        'valid-token',
+        'test@example.com',
+      );
       expect(result).toEqual(mock);
     });
   });

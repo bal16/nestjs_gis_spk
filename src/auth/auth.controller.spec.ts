@@ -156,6 +156,38 @@ describe('AuthController', () => {
     });
   });
 
+  describe('[POST /auth/change-password]', () => {
+    it('should change password successfully', async () => {
+      mockAuthService.changePassword.mockResolvedValue(true);
+
+      const mockReq = {
+        user: {
+          sub: 'user-id',
+          email: 'test@mail.co',
+        },
+      } as unknown as CustomRequest;
+
+      const changePasswordDto = {
+        oldPassword: 'old-password',
+        newPassword: 'new-password',
+      };
+
+      const result = await controller.changePassword(
+        mockReq,
+        changePasswordDto,
+      );
+
+      expect(result).toBeInstanceOf(WebResponse);
+      expect(result.statusCode).toBe(HttpStatus.OK);
+      expect(result.message).toBe('Password changed successfully');
+      expect(result.data).toBe(true);
+      expect(mockAuthService.changePassword).toHaveBeenCalledWith(
+        'user-id',
+        changePasswordDto,
+      );
+    });
+  });
+
   describe('[DELETE /auth/session]', () => {
     it('should call authService.logout with the user id from the request', async () => {
       mockAuthService.logout.mockResolvedValue(null);

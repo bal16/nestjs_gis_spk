@@ -46,7 +46,9 @@ export class InvitationController {
   @Get('validate/:token')
   async validate(
     @Param('token') token: string,
-  ): Promise<WebResponse<{ valid: boolean; email: string | null; role: string }>> {
+  ): Promise<
+    WebResponse<{ valid: boolean; email: string | null; role: string }>
+  > {
     const invitation = await this.invitationService.validateToken(token);
     return new WebResponse(
       'Invitation token is valid',

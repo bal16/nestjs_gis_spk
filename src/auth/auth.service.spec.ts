@@ -197,7 +197,9 @@ describe('AuthService', () => {
 
     it('should register a user with valid invitation token', async () => {
       const hashedPassword = 'hashed-password-from-bcrypt';
-      mockPrismaService.invitationToken.findUnique.mockResolvedValue(mockInvitation);
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue(
+        mockInvitation,
+      );
       mockPrismaService.invitationToken.update.mockResolvedValue({
         ...mockInvitation,
         usedAt: new Date(),
@@ -253,7 +255,9 @@ describe('AuthService', () => {
 
     it('should throw BadRequestException if email is already in use', async () => {
       const hashedPassword = 'hashed-password-from-bcrypt';
-      mockPrismaService.invitationToken.findUnique.mockResolvedValue(mockInvitation);
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue(
+        mockInvitation,
+      );
       mockHashService.hash.mockResolvedValue(hashedPassword);
 
       const prismaError = new Prisma.PrismaClientKnownRequestError(
@@ -273,7 +277,9 @@ describe('AuthService', () => {
 
     it('should throw InternalServerErrorException for other errors', async () => {
       const hashedPassword = 'hashed-password-from-bcrypt';
-      mockPrismaService.invitationToken.findUnique.mockResolvedValue(mockInvitation);
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue(
+        mockInvitation,
+      );
       mockHashService.hash.mockResolvedValue(hashedPassword);
       mockUserService.create.mockRejectedValue(new Error('Some other error'));
 
@@ -388,6 +394,66 @@ describe('AuthService', () => {
       await expect(service.getSession(email)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('[method] changePassword', () => {
+    it('should change password successfully', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockHashService.compare.mockResolvedValue(true);
+      mockHashService.hash.mockResolvedValue('new-hashed-password');
+      mockUserService.update.mockResolvedValue({
+        ...mockUser,
+        password: 'new-hashed-password',
+        mustChangePassword: false,
+      });
+
+      const result = await service.changePassword('cuid', {
+        oldPassword: 'password123',
+        newPassword: 'new-password456',
+      });
+
+      expect(result).toBe(true);
+      expect(mockUserService.update).toHaveBeenCalledWith({
+        id: 'cuid',
+        password: 'new-hashed-password',
+        mustChangePassword: false,
+      });
+    });
+
+    it('should throw UnauthorizedException if user not found', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.changePassword('non-existent', {
+          oldPassword: 'old',
+          newPassword: 'new',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw BadRequestException if current password is wrong', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockHashService.compare.mockResolvedValue(false);
+
+      await expect(
+        service.changePassword('cuid', {
+          oldPassword: 'wrong-password',
+          newPassword: 'new-password',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if new password is identical to old password', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockHashService.compare.mockResolvedValue(true);
+
+      await expect(
+        service.changePassword('cuid', {
+          oldPassword: 'same-password',
+          newPassword: 'same-password',
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

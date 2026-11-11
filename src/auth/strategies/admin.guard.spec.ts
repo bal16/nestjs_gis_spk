@@ -1,4 +1,8 @@
-import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AdminGuard } from './admin.guard';
 
 describe('AdminGuard', () => {
@@ -12,7 +16,9 @@ describe('AdminGuard', () => {
     expect(guard).toBeDefined();
   });
 
-  const createMockExecutionContext = (user?: { isAdmin: boolean }): ExecutionContext => {
+  const createMockExecutionContext = (user?: {
+    isAdmin: boolean;
+  }): ExecutionContext => {
     const mockRequest = { user };
     return {
       switchToHttp: () => ({

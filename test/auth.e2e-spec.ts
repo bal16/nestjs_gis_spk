@@ -44,7 +44,19 @@ describe('AuthModule', () => {
     prisma = app.get<PrismaService>(PrismaService);
   });
 
+  beforeEach(async () => {
+    await prisma.invitationToken.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.invitationToken.create({
+      data: {
+        token: 'test-invitation-token',
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      },
+    });
+  });
+
   afterEach(async () => {
+    await prisma.invitationToken.deleteMany();
     await prisma.user.deleteMany();
   });
 
@@ -56,6 +68,7 @@ describe('AuthModule', () => {
     email: 'test@example.com',
     username: 'testuser',
     password: 'password123',
+    invitationToken: 'test-invitation-token',
   };
 
   type AuthRouteResponseBody = WebResponse<{
@@ -88,9 +101,16 @@ describe('AuthModule', () => {
     it('should not register a user with an existing email and return 400', async () => {
       await request(app.getHttpServer()).post('/auth/register').send(testUser);
 
+      await prisma.invitationToken.create({
+        data: {
+          token: 'another-token',
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+        },
+      });
+
       return request(app.getHttpServer())
         .post('/auth/register')
-        .send(testUser)
+        .send({ ...testUser, invitationToken: 'another-token' })
         .expect(400);
     });
   });
@@ -152,9 +172,8 @@ describe('AuthModule', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
         .then((res) => {
-          expect((res.body as WebResponse<JwtPayload>).data.email).toBe(
-            testUser.email,
-          );
+          const body = res.body as WebResponse<{ email: string }>;
+          expect(body.data.email).toBe(testUser.email);
         });
     });
   });

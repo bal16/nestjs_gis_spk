@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma, type User } from '../generated/prisma/client';
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registration.dto';
+import { ChangePasswordDTO } from './dto/change-password.dto';
 import { LoginUser } from './entities/login.entity';
 import { RegisteredUser } from './entities/registered-user.entity';
 import { CurrentUser } from './entities/current.entity';
@@ -199,6 +200,41 @@ export class AuthService {
       user.isAdmin,
       user.mustChangePassword,
     );
+  }
+
+  async changePassword(id: string, dto: ChangePasswordDTO): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isMatch = await this.hashService.compare(
+      dto.oldPassword,
+      user.password,
+    );
+
+    if (!isMatch) {
+      throw new BadRequestException('Current password does not match');
+    }
+
+    if (dto.oldPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    const hashedPassword = await this.hashService.hash(dto.newPassword);
+
+    await this.userService.update({
+      id: user.id,
+      password: hashedPassword,
+      mustChangePassword: false,
+    });
+
+    return true;
   }
 
   async logout(id: string): Promise<null> {

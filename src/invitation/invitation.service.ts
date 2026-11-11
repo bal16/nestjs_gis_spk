@@ -39,10 +39,7 @@ export class InvitationService {
     });
   }
 
-  async validateToken(
-    token: string,
-    email?: string,
-  ): Promise<InvitationToken> {
+  async validateToken(token: string, email?: string): Promise<InvitationToken> {
     const invitation = await this.findOneByToken(token);
 
     if (!invitation) {
