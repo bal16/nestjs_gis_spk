@@ -13,6 +13,7 @@ import { DssController } from './dss/dss.controller';
 import { DssService } from './dss/dss.service';
 import { PrismaModule } from './infra/database/prisma.module';
 import { DssModule } from './dss/dss.module';
+import { InvitationModule } from './invitation/invitation.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { DssModule } from './dss/dss.module';
     AuthModule,
     BuildingModule,
     DssModule,
+    InvitationModule,
   ],
   controllers: [AppController, DssController],
   providers: [AppService, DssService],
