@@ -10,16 +10,29 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  email     String   @unique
-  password  String
-  isAdmin   Boolean  @default(false) @map("is_admin")
-  token     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  email              String   @unique
+  password           String
+  isAdmin            Boolean  @default(false) @map("is_admin")
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
+  token              String?
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("users")
+}
+
+model InvitationToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  email     String?
+  role      String    @default("user")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("invitation_tokens")
 }
 
 model Building {

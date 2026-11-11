@@ -316,6 +316,7 @@ async function main() {
       email: 'admin@example.com',
       password: await new HashService().hash('admin123'),
       isAdmin: true,
+      mustChangePassword: true,
     },
   });
   console.log(`Created user: ${user.email}`);

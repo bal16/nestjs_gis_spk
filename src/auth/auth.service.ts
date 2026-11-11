@@ -53,6 +53,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       isAdmin: user.isAdmin,
+      mustChangePassword: user.mustChangePassword,
     };
 
     const secret = this.configService.get<string>('JWT_SECRET', {
@@ -80,6 +81,7 @@ export class AuthService {
       username: user.name,
       id: user.id,
       isAdmin: user.isAdmin,
+      mustChangePassword: user.mustChangePassword,
     };
   }
 
@@ -93,6 +95,7 @@ export class AuthService {
       data.username,
       data.isAdmin,
       data.id,
+      data.mustChangePassword,
     );
   }
 
@@ -142,6 +145,7 @@ export class AuthService {
       user.name,
       user.isAdmin,
       user.id,
+      user.mustChangePassword,
     );
   }
 
@@ -152,7 +156,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return new CurrentUser(user.id, user.name, user.email, user.isAdmin);
+    return new CurrentUser(
+      user.id,
+      user.name,
+      user.email,
+      user.isAdmin,
+      user.mustChangePassword,
+    );
   }
 
   async logout(id: string): Promise<null> {
