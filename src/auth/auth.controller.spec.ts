@@ -74,6 +74,7 @@ describe('AuthController', () => {
         email: 'test@mail.co',
         password: 'password123',
         username: 'test-user',
+        invitationToken: 'mock-token',
       };
       const registeredUser = new RegisteredUser(
         'user-id',

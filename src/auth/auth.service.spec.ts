@@ -9,6 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
+import { PrismaService } from '../infra/database/prisma.service';
 
 import { HashService } from './hash.service';
 import { Prisma, User } from '../generated/prisma/client';
@@ -25,6 +26,7 @@ describe('AuthService', () => {
   let mockUserService: DeepMockProxy<UserService>;
   let mockHashService: DeepMockProxy<HashService>;
   let mockConfigService: DeepMockProxy<ConfigService>;
+  let mockPrismaService: DeepMockProxy<PrismaService>;
 
   const mockUser: User = {
     id: 'cuid',
@@ -32,6 +34,7 @@ describe('AuthService', () => {
     email: 'test@mail.co',
     password: '$2a$12$IOMRUtt534W9u8wEl5TBm.iSJZZ3GPcnG.wtJi/jfdDRgGwlbtTXm',
     isAdmin: false,
+    mustChangePassword: false,
     token: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -46,6 +49,7 @@ describe('AuthService', () => {
     email: 'test@mail.co',
     username: 'test-user',
     password: 'password123',
+    invitationToken: 'valid-invitation-token',
   };
 
   beforeEach(async () => {
@@ -56,6 +60,7 @@ describe('AuthService', () => {
         JwtService,
         ConfigService,
         HashService,
+        PrismaService,
       ],
     })
       .overrideProvider(UserService)
@@ -66,6 +71,8 @@ describe('AuthService', () => {
       .useValue(mockDeep<HashService>())
       .overrideProvider(ConfigService)
       .useValue(mockDeep<ConfigService>())
+      .overrideProvider(PrismaService)
+      .useValue(mockDeep<PrismaService>())
       .compile();
 
     service = module.get<AuthService>(AuthService);
@@ -73,6 +80,7 @@ describe('AuthService', () => {
     mockUserService = module.get(UserService);
     mockHashService = module.get(HashService);
     mockConfigService = module.get(ConfigService);
+    mockPrismaService = module.get(PrismaService);
   });
 
   it('should be defined', () => {
@@ -177,8 +185,23 @@ describe('AuthService', () => {
   });
 
   describe('[method] register', () => {
-    it('should register a user', async () => {
+    const mockInvitation = {
+      id: 'inv-1',
+      token: 'valid-invitation-token',
+      email: null,
+      role: 'user',
+      expiresAt: new Date(Date.now() + 100000),
+      usedAt: null,
+      createdAt: new Date(),
+    };
+
+    it('should register a user with valid invitation token', async () => {
       const hashedPassword = 'hashed-password-from-bcrypt';
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue(mockInvitation);
+      mockPrismaService.invitationToken.update.mockResolvedValue({
+        ...mockInvitation,
+        usedAt: new Date(),
+      });
       mockUserService.create.mockResolvedValue(mockUser);
       mockUserService.doseExist.mockResolvedValue(false);
       mockHashService.hash.mockResolvedValue(hashedPassword);
@@ -195,10 +218,42 @@ describe('AuthService', () => {
       expect(result.id).toBe('cuid');
       expect(result.username).toBe('test-user');
       expect(result.email).toBe('test@mail.co');
+      expect(mockPrismaService.invitationToken.update).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if invitation token is not found', async () => {
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue(null);
+
+      await expect(service.register(RegisterTestUser)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if invitation token is already used', async () => {
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue({
+        ...mockInvitation,
+        usedAt: new Date(),
+      });
+
+      await expect(service.register(RegisterTestUser)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if invitation token is expired', async () => {
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue({
+        ...mockInvitation,
+        expiresAt: new Date(Date.now() - 10000),
+      });
+
+      await expect(service.register(RegisterTestUser)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException if email is already in use', async () => {
       const hashedPassword = 'hashed-password-from-bcrypt';
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue(mockInvitation);
       mockHashService.hash.mockResolvedValue(hashedPassword);
 
       const prismaError = new Prisma.PrismaClientKnownRequestError(
@@ -218,6 +273,7 @@ describe('AuthService', () => {
 
     it('should throw InternalServerErrorException for other errors', async () => {
       const hashedPassword = 'hashed-password-from-bcrypt';
+      mockPrismaService.invitationToken.findUnique.mockResolvedValue(mockInvitation);
       mockHashService.hash.mockResolvedValue(hashedPassword);
       mockUserService.create.mockRejectedValue(new Error('Some other error'));
 

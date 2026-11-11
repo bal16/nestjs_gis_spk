@@ -16,6 +16,7 @@ import { RegisteredUser } from './entities/registered-user.entity';
 import { CurrentUser } from './entities/current.entity';
 
 import { UserService } from '../user/user.service';
+import { PrismaService } from '../infra/database/prisma.service';
 import { EnvironmentVariables } from '../common/env';
 import { JwtPayload } from './entities/jwt-payload.entity';
 
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly hashService: HashService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<EnvironmentVariables>,
+    private readonly prisma: PrismaService,
   ) {}
 
   async validateUser(input: LoginDTO) {
@@ -100,6 +102,31 @@ export class AuthService {
   }
 
   async register(input: RegistrationDTO): Promise<RegisteredUser> {
+    const invitation = await this.prisma.invitationToken.findUnique({
+      where: { token: input.invitationToken },
+    });
+
+    if (!invitation) {
+      throw new BadRequestException('Invalid invitation token');
+    }
+
+    if (invitation.usedAt) {
+      throw new BadRequestException('Invitation token has already been used');
+    }
+
+    if (new Date() > invitation.expiresAt) {
+      throw new BadRequestException('Invitation token has expired');
+    }
+
+    if (
+      invitation.email &&
+      invitation.email.toLowerCase() !== input.email.toLowerCase().trim()
+    ) {
+      throw new BadRequestException(
+        'Invitation token is restricted to another email address',
+      );
+    }
+
     try {
       const hashedPassword = await this.hashService.hash(input.password);
 
@@ -107,7 +134,13 @@ export class AuthService {
         password: hashedPassword,
         email: input.email,
         name: input.username,
-        isAdmin: false,
+        isAdmin: invitation.role === 'admin',
+        mustChangePassword: false,
+      });
+
+      await this.prisma.invitationToken.update({
+        where: { id: invitation.id },
+        data: { usedAt: new Date() },
       });
 
       return new RegisteredUser(
@@ -121,6 +154,9 @@ export class AuthService {
         error.code === 'P2002'
       ) {
         throw new BadRequestException('Email already in use');
+      }
+      if (error instanceof BadRequestException) {
+        throw error;
       }
       throw new InternalServerErrorException(
         'Something went wrong during registration',
