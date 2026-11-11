@@ -33,22 +33,20 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
-  if (process.env.NODE_ENV !== 'production') {
-    const openApiFilePath = path.join(process.cwd(), 'docs', 'OpenApi.yaml');
-    if (fs.existsSync(openApiFilePath)) {
-      const yamlFile = fs.readFileSync(openApiFilePath, 'utf8');
-      const openApiDocument = YAML.parse(yamlFile);
+  const openApiFilePath = path.join(process.cwd(), 'docs', 'OpenApi.yaml');
+  if (fs.existsSync(openApiFilePath)) {
+    const yamlFile = fs.readFileSync(openApiFilePath, 'utf8');
+    const openApiDocument = YAML.parse(yamlFile);
 
-      const { apiReference } = await import('@scalar/nestjs-api-reference');
-      app.use(
-        '/api/docs',
-        apiReference({
-          spec: {
-            content: openApiDocument,
-          },
-        }),
-      );
-    }
+    const { apiReference } = await import('@scalar/nestjs-api-reference');
+    app.use(
+      '/api/docs',
+      apiReference({
+        spec: {
+          content: openApiDocument,
+        },
+      }),
+    );
   }
 
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
