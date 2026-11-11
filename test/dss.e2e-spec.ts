@@ -43,8 +43,19 @@ describe('DssModule', () => {
 
     prisma = app.get<PrismaService>(PrismaService);
 
-    // Register and login test user
-    await request(app.getHttpServer()).post('/auth/register').send(testUser);
+    // Register and login test user (as admin)
+    await prisma.invitationToken.create({
+      data: {
+        token: 'dss-test-token',
+        role: 'admin',
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      },
+    });
+
+    await request(app.getHttpServer()).post('/auth/register').send({
+      ...testUser,
+      invitationToken: 'dss-test-token',
+    });
     const res = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: testUser.email, password: testUser.password });
@@ -93,6 +104,7 @@ describe('DssModule', () => {
 
   afterAll(async () => {
     // Clean up
+    await prisma.invitationToken.deleteMany();
     await prisma.sawRunDetail.deleteMany();
     await prisma.sawRun.deleteMany();
     await prisma.assessment.deleteMany();
