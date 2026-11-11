@@ -37,7 +37,7 @@ info:
     Authorization: Bearer <access_token>
     ```
 
-  version: 1.3.0
+  version: 1.4.0
   contact:
     name: API Support
     email: admin@ft.unnes.ac.id
@@ -48,13 +48,15 @@ servers:
 
 tags:
   - name: Auth
-    description: Authentication — login, register, token refresh, and session management
+    description: Authentication — login, register, token refresh, password changes, and session management
+  - name: Invitations
+    description: Invitation tokens — generate, list, validate, and revoke registration tokens (Admin only except validate)
   - name: Buildings
-    description: Building CRUD management (list is public; create/update/delete require auth)
+    description: Building CRUD management (list is public; create/update/delete require admin auth)
   - name: Assessments
-    description: Assessment criteria per building (C1–C5 input data)
+    description: Assessment criteria per building (C1–C5 input data; create/update/delete require admin auth)
   - name: DSS Engine
-    description: SAW calculation engine — weights, triggers, and run history
+    description: SAW calculation engine — weights, triggers, and run history (mutations require admin auth)
   - name: Public
     description: Public endpoints (no token required)
 
@@ -115,6 +117,7 @@ components:
         - username
         - email
         - password
+        - invitationToken
       properties:
         username:
           type: string
@@ -128,6 +131,10 @@ components:
           type: string
           description: Alphanumeric only (validated by class-validator @IsAlphanumeric)
           example: "StrongPass123"
+        invitationToken:
+          type: string
+          description: Valid, unused, and unexpired invitation token
+          example: "e4d909c290d0fb1ca068ffaddf22cbd0"
         avatar:
           type: string
           nullable: true
@@ -180,6 +187,10 @@ components:
         isAdmin:
           type: boolean
           example: false
+        mustChangePassword:
+          type: boolean
+          description: Whether the user must change password upon next login
+          example: false
         id:
           type: string
           format: cuid
@@ -202,6 +213,97 @@ components:
         isAdmin:
           type: boolean
           example: false
+        mustChangePassword:
+          type: boolean
+          example: false
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - oldPassword
+        - newPassword
+      properties:
+        oldPassword:
+          type: string
+          example: "OldPassword123"
+        newPassword:
+          type: string
+          minLength: 6
+          example: "NewSecurePassword456"
+
+    # -------------------------
+    # Invitations
+    # -------------------------
+    CreateInvitationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Optional email restriction for this invitation
+          example: "staf@ft.unnes.ac.id"
+        role:
+          type: string
+          enum: [user, admin]
+          default: user
+          description: Role granted upon registration
+          example: "user"
+        expiresInDays:
+          type: integer
+          minimum: 1
+          maximum: 30
+          default: 7
+          description: Validity duration in days
+          example: 7
+
+    InvitationToken:
+      type: object
+      properties:
+        id:
+          type: string
+          format: cuid
+          example: "clxxxxxxxxxxxxxxxxxx"
+        token:
+          type: string
+          description: 32-character hexadecimal token string
+          example: "e4d909c290d0fb1ca068ffaddf22cbd0"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "staf@ft.unnes.ac.id"
+        role:
+          type: string
+          example: "user"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2026-11-18T10:00:00.000Z"
+        usedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-11-11T10:00:00.000Z"
+
+    ValidateInvitationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "staf@ft.unnes.ac.id"
+        role:
+          type: string
+          example: "user"
 
     # -------------------------
     # Buildings
@@ -648,8 +750,8 @@ paths:
     post:
       summary: Register a new user
       description: |
-        Creates a new user account. By default, new accounts are **not admin** (`isAdmin: false`).
-        An admin account must be promoted manually in the database.
+        Creates a new user account. Registration requires a valid, unused, and unexpired **invitation token**.
+        The invitation token determines the assigned role (`user` or `admin`).
         Password must be **alphanumeric only** (letters and digits, no special characters).
       tags: [Auth]
       requestBody:
@@ -662,6 +764,7 @@ paths:
               username: "admin_main"
               email: "admin@ft.unnes.ac.id"
               password: "StrongPass123"
+              invitationToken: "e4d909c290d0fb1ca068ffaddf22cbd0"
       responses:
         '201':
           description: Registration successful
@@ -683,12 +786,19 @@ paths:
                   name: "admin_main"
                   email: "admin@ft.unnes.ac.id"
         '400':
-          description: Validation error or email already in use
+          description: Validation error, email already in use, or invalid/expired invitation token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
+                invalidToken:
+                  summary: Invalid or expired invitation token
+                  value:
+                    statusCode: 400
+                    success: false
+                    message: "Invalid invitation token"
+                    error: "Bad Request"
                 emailInUse:
                   summary: Email already registered
                   value:
@@ -710,7 +820,7 @@ paths:
       description: |
         Authenticates a user with email and password.
         Returns an **access token** (short-lived) and a **refresh token** (7-day expiry).
-        The refresh token is stored server-side and must be presented to `/auth/refresh`.
+        The response includes `mustChangePassword` flag indicating if password reset is required.
       tags: [Auth]
       requestBody:
         required: true
@@ -742,6 +852,7 @@ paths:
                   refreshToken: "eyJhbGci..."
                   username: "admin_main"
                   isAdmin: false
+                  mustChangePassword: false
                   id: "clxxxxxxxxxxxxxxxxxx"
         '401':
           description: Invalid credentials
@@ -786,6 +897,7 @@ paths:
                   refreshToken: "eyJhbGci_new..."
                   username: "admin_main"
                   isAdmin: false
+                  mustChangePassword: false
                   id: "clxxxxxxxxxxxxxxxxxx"
         '401':
           description: Refresh token invalid or expired
@@ -824,8 +936,63 @@ paths:
                   name: "admin_main"
                   email: "admin@ft.unnes.ac.id"
                   isAdmin: false
+                  mustChangePassword: false
         '401':
           description: Access token invalid or missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/change-password:
+    post:
+      summary: Change account password
+      description: |
+        Changes the password of the currently authenticated user.
+        Verifies `oldPassword`, encrypts `newPassword`, and clears `mustChangePassword` to `false`.
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            example:
+              oldPassword: "admin123"
+              newPassword: "NewSecurePassword456"
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: boolean
+                        example: true
+              example:
+                statusCode: 200
+                success: true
+                message: "Password changed successfully"
+                data: true
+        '400':
+          description: Incorrect current password or new password identical to old
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                success: false
+                message: "Current password does not match"
+                error: "Bad Request"
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -864,6 +1031,168 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  # ============================================================
+  # INVITATIONS
+  # ============================================================
+  /invitations:
+    post:
+      summary: Generate invitation token (Admin Only)
+      description: |
+        Generates a new unique registration invitation token.
+        Requires **Admin** privileges.
+      tags: [Invitations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvitationRequest'
+            example:
+              email: "staf@ft.unnes.ac.id"
+              role: "user"
+              expiresInDays: 7
+      responses:
+        '201':
+          description: Invitation token generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/InvitationToken'
+              example:
+                statusCode: 201
+                success: true
+                message: "Invitation token created successfully"
+                data:
+                  id: "clxxxxxxxxxxxxxxxxxx"
+                  token: "e4d909c290d0fb1ca068ffaddf22cbd0"
+                  email: "staf@ft.unnes.ac.id"
+                  role: "user"
+                  expiresAt: "2026-11-18T10:00:00.000Z"
+                  usedAt: null
+                  createdAt: "2026-11-11T10:00:00.000Z"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 403
+                success: false
+                message: "Admin access required"
+                error: "Forbidden"
+
+    get:
+      summary: List all invitation tokens (Admin Only)
+      description: |
+        Returns all invitation tokens ordered by creation date descending.
+        Requires **Admin** privileges.
+      tags: [Invitations]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of invitation tokens
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InvitationToken'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Admin access required
+
+  /invitations/validate/{token}:
+    get:
+      summary: Validate invitation token (Public)
+      description: |
+        Validates if an invitation token is active, unused, and not expired.
+        Does not require authentication.
+      tags: [Invitations, Public]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "e4d909c290d0fb1ca068ffaddf22cbd0"
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ValidateInvitationResponse'
+              example:
+                statusCode: 200
+                success: true
+                message: "Invitation token is valid"
+                data:
+                  valid: true
+                  email: "staf@ft.unnes.ac.id"
+                  role: "user"
+        '400':
+          description: Token already used or expired
+        '404':
+          description: Token not found
+
+  /invitations/{id}:
+    delete:
+      summary: Revoke / delete invitation token (Admin Only)
+      description: |
+        Deletes an invitation token by its ID.
+        Requires **Admin** privileges.
+      tags: [Invitations]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "clxxxxxxxxxxxxxxxxxx"
+      responses:
+        '200':
+          description: Invitation token deleted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: boolean
+                        example: true
+        '401':
+          description: Unauthorized
+        '403':
+          description: Admin access required
+        '404':
+          description: Invitation token not found
 
   # ============================================================
   # BUILDINGS
@@ -906,8 +1235,8 @@ paths:
                     sawRunDetails: []
 
     post:
-      summary: Create a new building
-      description: Creates a new building record. Requires authentication.
+      summary: Create a new building (Admin Only)
+      description: Creates a new building record. Requires **Admin** privileges.
       tags: [Buildings]
       security:
         - bearerAuth: []
@@ -958,6 +1287,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /buildings/{id}:
     parameters:
@@ -970,10 +1305,10 @@ paths:
         example: "clxxxxxxxxxxxxxxxxxx"
 
     put:
-      summary: Update a building
+      summary: Update a building (Admin Only)
       description: |
         Updates one or more fields of a building. Only the provided fields are updated.
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [Buildings]
       security:
         - bearerAuth: []
@@ -1015,6 +1350,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Building not found
           content:
@@ -1023,10 +1364,10 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     delete:
-      summary: Delete a building
+      summary: Delete a building (Admin Only)
       description: |
         Deletes a building and all cascading records (assessments, SAW run details).
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [Buildings]
       security:
         - bearerAuth: []
@@ -1052,6 +1393,12 @@ paths:
                   name: "Gedung E1"
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -1132,11 +1479,11 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     post:
-      summary: Create an assessment for a building
+      summary: Create an assessment for a building (Admin Only)
       description: |
         Creates a new assessment record for the building identified by `code`.
         A building can have multiple assessment records over time (history).
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [Assessments]
       security:
         - bearerAuth: []
@@ -1186,6 +1533,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /buildings/{code}/assessments/{assessmentId}:
     parameters:
@@ -1205,10 +1558,10 @@ paths:
         example: "clxxxxxxxxxxxxxxxxxx"
 
     put:
-      summary: Update an assessment
+      summary: Update an assessment (Admin Only)
       description: |
         Partially updates an existing assessment record. All fields are optional.
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [Assessments]
       security:
         - bearerAuth: []
@@ -1254,6 +1607,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /buildings/assessments/{assessmentId}:
     parameters:
@@ -1266,10 +1625,10 @@ paths:
         example: "clxxxxxxxxxxxxxxxxxx"
 
     delete:
-      summary: Delete an assessment
+      summary: Delete an assessment (Admin Only)
       description: |
         Permanently deletes a specific assessment record by its ID.
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [Assessments]
       security:
         - bearerAuth: []
@@ -1293,6 +1652,12 @@ paths:
                   id: "clxxxxxxxxxxxxxxxxxx"
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -1365,14 +1730,14 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     put:
-      summary: Update weight configuration
+      summary: Update weight configuration (Admin Only)
       description: |
         Updates the SAW weight configuration. Validation rules:
         - Sum of all top-level weight `value` fields **must equal exactly 1.0** (tolerance: 0.0001).
         - For any criterion with sub-weights, the sum of sub-weight values **must also equal 1.0**.
 
         Throws `400 Bad Request` if totals are invalid.
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [DSS Engine]
       security:
         - bearerAuth: []
@@ -1435,10 +1800,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /dss/calculate:
     post:
-      summary: Trigger SAW calculation
+      summary: Trigger SAW calculation (Admin Only)
       description: |
         Triggers the full SAW calculation pipeline and saves a snapshot to the database.
 
@@ -1454,7 +1825,7 @@ paths:
         7. Save a `SawRun` record with `SawRunDetail` for each building.
 
         Returns `true` on success.
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [DSS Engine]
       security:
         - bearerAuth: []
@@ -1483,6 +1854,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -1712,6 +2089,10 @@ paths:
                 data: true
         '401':
           description: Unauthorized
+        '403':
+          description: Admin access required
+        '404':
+          description: Run not found
           content:
             application/json:
               schema:
@@ -1728,10 +2109,10 @@ paths:
         example: "clxxxxxxxxxxxxxxxxxx"
 
     delete:
-      summary: Delete a single SAW run detail record
+      summary: Delete a single SAW run detail record (Admin Only)
       description: |
         Permanently deletes a specific SAW run detail entry (individual building result within a run).
-        Requires authentication.
+        Requires **Admin** privileges.
       tags: [DSS Engine]
       security:
         - bearerAuth: []
@@ -1754,6 +2135,8 @@ paths:
                 data: true
         '401':
           description: Unauthorized
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:

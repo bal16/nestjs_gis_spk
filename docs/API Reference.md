@@ -1,6 +1,6 @@
 # API Reference — DSS Building Maintenance (FT UNNES)
 
-**Version:** 1.3.0  
+**Version:** 1.4.0  
 **Standard:** RESTful  
 **Base URL:** `http://localhost:3001`  
 **Format:** JSON  
@@ -16,18 +16,24 @@
    - [POST /auth/login](#post-authlogin)
    - [POST /auth/refresh](#post-authrefresh)
    - [GET /auth/me](#get-authme)
+   - [POST /auth/change-password](#post-authchange-password)
    - [DELETE /auth/session](#delete-authsession)
-3. [Buildings](#3-buildings)
+3. [Invitations](#3-invitations)
+   - [POST /invitations](#post-invitations)
+   - [GET /invitations](#get-invitations)
+   - [GET /invitations/validate/:token](#get-invitationsvalidatetoken)
+   - [DELETE /invitations/:id](#delete-invitationsid)
+4. [Buildings](#4-buildings)
    - [GET /buildings](#get-buildings)
    - [POST /buildings](#post-buildings)
    - [PUT /buildings/:id](#put-buildingsid)
    - [DELETE /buildings/:id](#delete-buildingsid)
-4. [Assessments](#4-assessments)
+5. [Assessments](#5-assessments)
    - [GET /buildings/:code/assessments](#get-buildingscodeassessments)
    - [POST /buildings/:code/assessments](#post-buildingscodeassessments)
    - [PUT /buildings/:code/assessments/:assessmentId](#put-buildingscodeassessmentsassessmentid)
    - [DELETE /buildings/assessments/:assessmentId](#delete-buildingsassessmentsassessmentid)
-5. [DSS Engine](#5-dss-engine)
+6. [DSS Engine](#6-dss-engine)
    - [GET /dss/weights](#get-dssweights)
    - [PUT /dss/weights](#put-dssweights)
    - [POST /dss/calculate](#post-dsscalculate)
@@ -37,8 +43,8 @@
    - [GET /dss/runs/:id](#get-dssrunsid)
    - [DELETE /dss/runs/:id](#delete-dssrunsid)
    - [DELETE /dss/runs/details/:id](#delete-dssrunsdetailsid)
-6. [Data Models](#6-data-models)
-7. [Error Reference](#7-error-reference)
+7. [Data Models](#7-data-models)
+8. [Error Reference](#8-error-reference)
 
 ---
 
@@ -116,7 +122,8 @@ Access tokens are short-lived JWTs. Refresh tokens expire after **7 days** and a
 
 Register a new user account.
 
-> **Note:** New accounts are created with `isAdmin: false`. Admin promotion must be done directly in the database.
+> **Access Control:** Registration requires a valid, unexpired, and unused **invitation token**.
+> The invitation token determines whether the account is created as a standard `user` or an `admin`.
 
 **Request:**
 
@@ -129,7 +136,8 @@ Content-Type: application/json
 {
   "username": "admin_main",
   "email": "admin@ft.unnes.ac.id",
-  "password": "StrongPass123"
+  "password": "StrongPass123",
+  "invitationToken": "e4d909c290d0fb1ca068ffaddf22cbd0"
 }
 ```
 
@@ -138,6 +146,7 @@ Content-Type: application/json
 | `username` | string | ✅ | Non-empty string |
 | `email` | string | ✅ | Valid email format |
 | `password` | string | ✅ | Alphanumeric only (`@IsAlphanumeric`) |
+| `invitationToken` | string | ✅ | Valid, unexpired, and unused invitation token |
 | `avatar` | string | ❌ | Optional avatar URL |
 
 **Response — 201 Created:**
@@ -159,7 +168,7 @@ Content-Type: application/json
 
 | Status | Cause |
 |---|---|
-| `400` | Email already in use, or password contains non-alphanumeric characters |
+| `400` | Invalid, expired, or already-used invitation token; email already in use; token restricted to another email; or non-alphanumeric password |
 | `500` | Unexpected registration error |
 
 ---
@@ -194,6 +203,7 @@ Content-Type: application/json
     "refreshToken": "eyJhbGci...",
     "username": "admin_main",
     "isAdmin": false,
+    "mustChangePassword": false,
     "id": "clxxxxxxxxxxxxxxxxxx"
   }
 }
@@ -234,6 +244,7 @@ _(No request body required)_
     "refreshToken": "eyJhbGci_new...",
     "username": "admin_main",
     "isAdmin": false,
+    "mustChangePassword": false,
     "id": "clxxxxxxxxxxxxxxxxxx"
   }
 }
@@ -269,7 +280,8 @@ Authorization: Bearer <access_token>
     "id": "clxxxxxxxxxxxxxxxxxx",
     "name": "admin_main",
     "email": "admin@ft.unnes.ac.id",
-    "isAdmin": false
+    "isAdmin": false,
+    "mustChangePassword": false
   }
 }
 ```
@@ -278,6 +290,52 @@ Authorization: Bearer <access_token>
 
 | Status | Cause |
 |---|---|
+| `401` | Invalid or expired access token |
+
+---
+
+### POST /auth/change-password
+
+Change the password of the currently authenticated user.
+
+> **Security Note:** Clears the `mustChangePassword` flag upon success, completing the first-login onboarding requirement.
+
+**Request:**
+
+```http
+POST /auth/change-password
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "oldPassword": "admin123",
+  "newPassword": "NewSecurePassword456"
+}
+```
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `oldPassword` | string | ✅ | Current account password |
+| `newPassword` | string | ✅ | Minimum 6 characters; must differ from `oldPassword` |
+
+**Response — 200 OK:**
+
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Password changed successfully",
+  "data": true
+}
+```
+
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `400` | Current password incorrect, or new password identical to old password |
 | `401` | Invalid or expired access token |
 
 ---
@@ -312,9 +370,176 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 3. Buildings
+## 3. Invitations
 
-> **Access:** `GET /buildings` is **public** (no token required). All other building endpoints require authentication.
+> **Access Control:** All invitation management endpoints require **Admin** privileges (`AdminGuard`), with the exception of the public token validation endpoint (`GET /invitations/validate/:token`).
+
+### POST /invitations
+
+Generate a new invitation token.
+
+**Request:**
+
+```http
+POST /invitations
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "email": "staf@ft.unnes.ac.id",
+  "role": "user",
+  "expiresInDays": 7
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `email` | string | ❌ | Optional email restriction. If set, only this email can register with this token |
+| `role` | string | ❌ | Role granted upon registration (`user` or `admin`). Default: `user` |
+| `expiresInDays` | integer | ❌ | Token validity duration in days (1–30). Default: `7` |
+
+**Response — 201 Created:**
+
+```json
+{
+  "statusCode": 201,
+  "success": true,
+  "message": "Invitation token created successfully",
+  "data": {
+    "id": "clxxxxxxxxxxxxxxxxxx",
+    "token": "e4d909c290d0fb1ca068ffaddf22cbd0",
+    "email": "staf@ft.unnes.ac.id",
+    "role": "user",
+    "expiresAt": "2026-11-18T10:00:00.000Z",
+    "usedAt": null,
+    "createdAt": "2026-11-11T10:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `401` | Missing or invalid access token |
+| `403` | Non-admin user |
+
+---
+
+### GET /invitations
+
+Retrieve all invitation tokens ordered by creation date descending.
+
+**Request:**
+
+```http
+GET /invitations
+Authorization: Bearer <access_token>
+```
+
+**Response — 200 OK:**
+
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Success",
+  "data": [
+    {
+      "id": "clxxxxxxxxxxxxxxxxxx",
+      "token": "e4d909c290d0fb1ca068ffaddf22cbd0",
+      "email": "staf@ft.unnes.ac.id",
+      "role": "user",
+      "expiresAt": "2026-11-18T10:00:00.000Z",
+      "usedAt": null,
+      "createdAt": "2026-11-11T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `401` | Missing or invalid access token |
+| `403` | Non-admin user |
+
+---
+
+### GET /invitations/validate/:token
+
+Validate whether an invitation token is active, unused, and not expired.
+
+> **Public Access:** No authentication token is required. Useful for on-blur checks on registration forms.
+
+**Request:**
+
+```http
+GET /invitations/validate/e4d909c290d0fb1ca068ffaddf22cbd0
+```
+
+**Response — 200 OK:**
+
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Invitation token is valid",
+  "data": {
+    "valid": true,
+    "email": "staf@ft.unnes.ac.id",
+    "role": "user"
+  }
+}
+```
+
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `400` | Token has already been used or has expired |
+| `404` | Token does not exist |
+
+---
+
+### DELETE /invitations/:id
+
+Revoke or delete an invitation token.
+
+**Request:**
+
+```http
+DELETE /invitations/clxxxxxxxxxxxxxxxxxx
+Authorization: Bearer <access_token>
+```
+
+**Response — 200 OK:**
+
+```json
+{
+  "statusCode": 200,
+  "success": true,
+  "message": "Invitation token deleted successfully",
+  "data": true
+}
+```
+
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `401` | Missing or invalid access token |
+| `403` | Non-admin user |
+| `404` | Invitation token not found |
+
+---
+
+## 4. Buildings
+
+> **Access:** `GET /buildings` is **public** (no token required). Mutation operations (`POST`, `PUT`, `DELETE`) require **Admin** privileges (`AdminGuard`) and return `403 Forbidden` for non-admin users.
 
 ### GET /buildings
 
@@ -361,7 +586,7 @@ GET /buildings
 
 ### POST /buildings
 
-Create a new building.
+Create a new building. Requires **Admin** privileges.
 
 **Request:**
 
@@ -416,6 +641,7 @@ Content-Type: application/json
 |---|---|
 | `400` | Duplicate `code`, or validation errors |
 | `401` | Unauthorized |
+| `403` | Non-admin user |
 
 ---
 
@@ -472,13 +698,14 @@ Content-Type: application/json
 | Status | Cause |
 |---|---|
 | `401` | Unauthorized |
+| `403` | Non-admin user |
 | `404` | Building not found |
 
 ---
 
 ### DELETE /buildings/:id
 
-Permanently delete a building and all cascading records (assessments, SAW run details).
+Permanently delete a building and all cascading records (assessments, SAW run details). Requires **Admin** privileges.
 
 **Request:**
 
@@ -507,13 +734,15 @@ Authorization: Bearer <access_token>
 | Status | Cause |
 |---|---|
 | `401` | Unauthorized |
+| `403` | Non-admin user |
 | `404` | Building not found |
 
 ---
 
-## 4. Assessments
+## 5. Assessments
 
 > All assessment endpoints require authentication.
+> Mutation operations (`POST`, `PUT`, `DELETE`) require **Admin** privileges (`AdminGuard`) and return `403 Forbidden` for non-admin users.
 > **Important:** Assessment endpoints use the building `code` field (e.g. `"E1"`), **not** the CUID `id`.
 
 ### GET /buildings/:code/assessments
@@ -632,7 +861,7 @@ Content-Type: application/json
 
 ### PUT /buildings/:code/assessments/:assessmentId
 
-Update an existing assessment record. All fields are **optional** (partial update).
+Update an existing assessment record. All fields are **optional** (partial update). Requires **Admin** privileges.
 
 **Request:**
 
@@ -681,11 +910,18 @@ Content-Type: application/json
 }
 ```
 
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `401` | Unauthorized |
+| `403` | Non-admin user |
+
 ---
 
 ### DELETE /buildings/assessments/:assessmentId
 
-Permanently delete a specific assessment record.
+Permanently delete a specific assessment record. Requires **Admin** privileges.
 
 **Request:**
 
@@ -707,11 +943,19 @@ Authorization: Bearer <access_token>
 }
 ```
 
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `401` | Unauthorized |
+| `403` | Non-admin user |
+
 ---
 
-## 5. DSS Engine
+## 6. DSS Engine
 
 > All DSS Engine endpoints require authentication.
+> Mutation operations (`PUT /dss/weights`, `POST /dss/calculate`, `DELETE /dss/runs/:id`, `DELETE /dss/runs/details/:id`) require **Admin** privileges (`AdminGuard`) and return `403 Forbidden` for non-admin users.
 
 ### GET /dss/weights
 
@@ -765,7 +1009,7 @@ Authorization: Bearer <access_token>
 
 ### PUT /dss/weights
 
-Update the SAW weight configuration.
+Update the SAW weight configuration. Requires **Admin** privileges.
 
 > **Validation rules (enforced server-side):**
 > - Sum of all top-level `value` fields must equal **exactly 1.0** (tolerance: ±0.0001).
@@ -815,6 +1059,8 @@ Content-Type: application/json
 | Status | Cause |
 |---|---|
 | `400` | Top-level weights do not sum to 1.0, or a sub-weight group does not sum to 1.0 |
+| `401` | Unauthorized |
+| `403` | Non-admin user |
 
 **Error example:**
 
@@ -831,7 +1077,7 @@ Content-Type: application/json
 
 ### POST /dss/calculate
 
-Trigger the SAW calculation algorithm and save a snapshot.
+Trigger the SAW calculation algorithm and save a snapshot. Requires **Admin** privileges.
 
 **Calculation algorithm:**
 
@@ -1032,7 +1278,7 @@ Authorization: Bearer <access_token>
 
 ### DELETE /dss/runs/:id
 
-Permanently delete a SAW run and all cascading `SawRunDetail` records.
+Permanently delete a SAW run and all cascading `SawRunDetail` records. Requires **Admin** privileges.
 
 **Request:**
 
@@ -1052,11 +1298,19 @@ Authorization: Bearer <access_token>
 }
 ```
 
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `401` | Unauthorized |
+| `403` | Non-admin user |
+| `404` | Run not found |
+
 ---
 
 ### DELETE /dss/runs/details/:id
 
-Permanently delete a single `SawRunDetail` record (individual building result within a run).
+Permanently delete a single `SawRunDetail` record (individual building result within a run). Requires **Admin** privileges.
 
 **Request:**
 
@@ -1076,9 +1330,16 @@ Authorization: Bearer <access_token>
 }
 ```
 
+**Errors:**
+
+| Status | Cause |
+|---|---|
+| `401` | Unauthorized |
+| `403` | Non-admin user |
+
 ---
 
-## 6. Data Models
+## 7. Data Models
 
 ### User
 
@@ -1088,9 +1349,22 @@ Authorization: Bearer <access_token>
 | `name` | string | Display name (unique) |
 | `email` | string | Email address (unique) |
 | `isAdmin` | boolean | Admin flag |
+| `mustChangePassword` | boolean | Password reset required flag |
 | `token` | string \| null | Stored refresh token |
 | `createdAt` | DateTime | Creation timestamp |
 | `updatedAt` | DateTime | Last update timestamp |
+
+### InvitationToken
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string (CUID) | Unique invitation identifier |
+| `token` | string | 32-character hex token string (unique) |
+| `email` | string \| null | Restricted email address (null if any email can use) |
+| `role` | string | Role assigned upon registration (`"user"` or `"admin"`) |
+| `expiresAt` | DateTime | Token expiration timestamp |
+| `usedAt` | DateTime \| null | Timestamp when token was redeemed |
+| `createdAt` | DateTime | Creation timestamp |
 
 ### Building
 
@@ -1159,17 +1433,28 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 7. Error Reference
+## 8. Error Reference
 
 ### Standard Error Codes
 
 | HTTP Status | NestJS Exception | Common Cause |
 |---|---|---|
-| `400` | `BadRequestException` | Validation failure, weight sum ≠ 1.0, duplicate unique key |
+| `400` | `BadRequestException` | Validation failure, invalid invitation token, weight sum ≠ 1.0, duplicate unique key |
 | `401` | `UnauthorizedException` | Missing, invalid, or expired token; invalid credentials |
-| `403` | `ForbiddenException` | Insufficient permissions |
-| `404` | `NotFoundException` | Resource not found (building, run, etc.) |
+| `403` | `ForbiddenException` | Admin access required (non-admin attempt to access protected endpoints) |
+| `404` | `NotFoundException` | Resource not found (building, run, invitation token, etc.) |
 | `500` | `InternalServerErrorException` | Unexpected server-side failure |
+
+### Forbidden Error Format (403)
+
+```json
+{
+  "statusCode": 403,
+  "success": false,
+  "message": "Admin access required",
+  "error": "Forbidden"
+}
+```
 
 ### Validation Error Format
 
