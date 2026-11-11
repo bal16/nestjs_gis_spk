@@ -23,6 +23,17 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+    : ['http://localhost:3000'];
+
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const openApiFilePath = path.join(process.cwd(), 'docs', 'OpenApi.yaml');
     if (fs.existsSync(openApiFilePath)) {
@@ -40,7 +51,8 @@ async function bootstrap() {
     }
   }
 
-  await app.listen(process.env.PORT ?? 3001);
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
 
