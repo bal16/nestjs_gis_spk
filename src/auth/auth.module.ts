@@ -4,10 +4,12 @@ import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { HashService } from './hash.service';
+import { AdminGuard } from './strategies/admin.guard';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, HashService],
+  providers: [AuthService, HashService, AdminGuard],
+  exports: [AuthService, HashService, AdminGuard],
   imports: [
     UserModule,
     JwtModule.register({

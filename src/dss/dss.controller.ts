@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
+import { AdminGuard } from '../auth/strategies/admin.guard';
 import { WebResponse } from '../common/responses/web.response';
 import { DssService } from './dss.service';
 import { BatchUpdateWeightsDTO } from './dto/update-weights.dto';
@@ -55,7 +56,7 @@ export class DssController {
     return new WebResponse('Success', weightDatas, HttpStatus.OK);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Put('weights')
   async updateWeights(
@@ -69,7 +70,7 @@ export class DssController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Post('calculate')
   async calculate(): Promise<WebResponse<boolean>> {
@@ -82,7 +83,7 @@ export class DssController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Delete('runs/details/:id')
   async deleteRunDetail(
@@ -97,7 +98,7 @@ export class DssController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Delete('runs/:id')
   async deleteRun(@Param('id') id: string): Promise<WebResponse<boolean>> {
