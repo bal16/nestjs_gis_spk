@@ -44,7 +44,19 @@ describe('AuthModule', () => {
     prisma = app.get<PrismaService>(PrismaService);
   });
 
+  beforeEach(async () => {
+    await prisma.invitationToken.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.invitationToken.create({
+      data: {
+        token: 'test-invitation-token',
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      },
+    });
+  });
+
   afterEach(async () => {
+    await prisma.invitationToken.deleteMany();
     await prisma.user.deleteMany();
   });
 
@@ -56,6 +68,7 @@ describe('AuthModule', () => {
     email: 'test@example.com',
     username: 'testuser',
     password: 'password123',
+    invitationToken: 'test-invitation-token',
   };
 
   type AuthRouteResponseBody = WebResponse<{
@@ -88,9 +101,60 @@ describe('AuthModule', () => {
     it('should not register a user with an existing email and return 400', async () => {
       await request(app.getHttpServer()).post('/auth/register').send(testUser);
 
+      await prisma.invitationToken.create({
+        data: {
+          token: 'another-token',
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+        },
+      });
+
       return request(app.getHttpServer())
         .post('/auth/register')
-        .send(testUser)
+        .send({ ...testUser, invitationToken: 'another-token' })
+        .expect(400);
+    });
+
+    it('should reject registration without invitation token (400)', () => {
+      const { invitationToken: _, ...userWithoutToken } = testUser;
+      return request(app.getHttpServer())
+        .post('/auth/register')
+        .send(userWithoutToken)
+        .expect(400);
+    });
+
+    it('should reject registration with invalid invitation token (400)', () => {
+      return request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...testUser, invitationToken: 'non-existent-token' })
+        .expect(400);
+    });
+
+    it('should reject registration with expired invitation token (400)', async () => {
+      await prisma.invitationToken.create({
+        data: {
+          token: 'expired-token',
+          expiresAt: new Date(Date.now() - 1000 * 60),
+        },
+      });
+
+      return request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...testUser, invitationToken: 'expired-token' })
+        .expect(400);
+    });
+
+    it('should reject registration when token is restricted to another email (400)', async () => {
+      await prisma.invitationToken.create({
+        data: {
+          token: 'restricted-token',
+          email: 'other@example.com',
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+        },
+      });
+
+      return request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...testUser, invitationToken: 'restricted-token' })
         .expect(400);
     });
   });
@@ -152,9 +216,8 @@ describe('AuthModule', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200)
         .then((res) => {
-          expect((res.body as WebResponse<JwtPayload>).data.email).toBe(
-            testUser.email,
-          );
+          const body = res.body as WebResponse<{ email: string }>;
+          expect(body.data.email).toBe(testUser.email);
         });
     });
   });
@@ -209,6 +272,65 @@ describe('AuthModule', () => {
         .delete('/auth/session')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
+    });
+  });
+
+  describe('POST /auth/change-password', () => {
+    let accessToken: string;
+
+    beforeEach(async () => {
+      await request(app.getHttpServer()).post('/auth/register').send(testUser);
+      const res = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: testUser.email, password: testUser.password });
+      const body = res.body as AuthRouteResponseBody;
+      accessToken = body.data.accessToken;
+    });
+
+    it('should reject unauthenticated request (401)', () => {
+      return request(app.getHttpServer())
+        .post('/auth/change-password')
+        .send({ oldPassword: 'password123', newPassword: 'newpassword123' })
+        .expect(401);
+    });
+
+    it('should reject change password if old password does not match (400)', () => {
+      return request(app.getHttpServer())
+        .post('/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ oldPassword: 'wrongpassword', newPassword: 'newpassword123' })
+        .expect(400);
+    });
+
+    it('should reject change password if new password is identical to old password (400)', () => {
+      return request(app.getHttpServer())
+        .post('/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ oldPassword: testUser.password, newPassword: testUser.password })
+        .expect(400);
+    });
+
+    it('should change password successfully and allow login with new password', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/change-password')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ oldPassword: testUser.password, newPassword: 'brandNewPassword123' })
+        .expect(200);
+
+      // Verify old password fails
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: testUser.email, password: testUser.password })
+        .expect(401);
+
+      // Verify new password succeeds
+      const newLogin = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: testUser.email, password: 'brandNewPassword123' })
+        .expect(200);
+
+      const body = newLogin.body as AuthRouteResponseBody;
+      expect(body.data).toHaveProperty('accessToken');
     });
   });
 });

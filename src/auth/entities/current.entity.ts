@@ -8,6 +8,7 @@ export class CurrentUser implements User {
     public readonly name: string,
     public readonly email: string,
     public readonly isAdmin: boolean,
+    public readonly mustChangePassword: boolean = false,
   ) {}
 
   @Exclude()

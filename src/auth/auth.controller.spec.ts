@@ -74,6 +74,7 @@ describe('AuthController', () => {
         email: 'test@mail.co',
         password: 'password123',
         username: 'test-user',
+        invitationToken: 'mock-token',
       };
       const registeredUser = new RegisteredUser(
         'user-id',
@@ -152,6 +153,38 @@ describe('AuthController', () => {
       expect(result.statusCode).toBe(HttpStatus.OK);
       expect(result.message).toBe('Success');
       expect(result.data).toEqual(currentUser);
+    });
+  });
+
+  describe('[POST /auth/change-password]', () => {
+    it('should change password successfully', async () => {
+      mockAuthService.changePassword.mockResolvedValue(true);
+
+      const mockReq = {
+        user: {
+          sub: 'user-id',
+          email: 'test@mail.co',
+        },
+      } as unknown as CustomRequest;
+
+      const changePasswordDto = {
+        oldPassword: 'old-password',
+        newPassword: 'new-password',
+      };
+
+      const result = await controller.changePassword(
+        mockReq,
+        changePasswordDto,
+      );
+
+      expect(result).toBeInstanceOf(WebResponse);
+      expect(result.statusCode).toBe(HttpStatus.OK);
+      expect(result.message).toBe('Password changed successfully');
+      expect(result.data).toBe(true);
+      expect(mockAuthService.changePassword).toHaveBeenCalledWith(
+        'user-id',
+        changePasswordDto,
+      );
     });
   });
 

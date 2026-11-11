@@ -313,9 +313,10 @@ async function main() {
   const user = await prisma.user.create({
     data: {
       name: 'Super Admin',
-      email: 'admin@example.com',
+      email: 'admin@unnes.ac.id',
       password: await new HashService().hash('admin123'),
       isAdmin: true,
+      mustChangePassword: true,
     },
   });
   console.log(`Created user: ${user.email}`);

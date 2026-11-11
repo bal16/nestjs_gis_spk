@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AccessTokenGuard } from '../auth/strategies/accessToken.guard';
+import { AdminGuard } from '../auth/strategies/admin.guard';
 import { WebResponse } from '../common/responses/web.response';
 import { BuildingService } from './building.service';
 import { CreateAssessmentDTO } from './dto/create-assessment.dto';
@@ -32,7 +33,7 @@ export class BuildingController {
     return new WebResponse('Success', buildings, HttpStatus.OK);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   async create(
@@ -47,7 +48,7 @@ export class BuildingController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Put(':id')
   async update(
@@ -63,7 +64,7 @@ export class BuildingController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Delete(':id')
   async delete(@Param('id') id: string): Promise<WebResponse<unknown>> {
@@ -87,7 +88,7 @@ export class BuildingController {
     return new WebResponse('Success', assessments, HttpStatus.OK);
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post(':code/assessments')
   async createAssessment(
@@ -106,7 +107,7 @@ export class BuildingController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Put(':code/assessments/:assessmentId')
   async updateAssessment(
@@ -127,7 +128,7 @@ export class BuildingController {
     );
   }
 
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, AdminGuard)
   @HttpCode(HttpStatus.OK)
   @Delete('/assessments/:assessmentId')
   async deleteAssessment(

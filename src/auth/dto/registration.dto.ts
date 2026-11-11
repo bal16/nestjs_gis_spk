@@ -22,6 +22,10 @@ export class RegistrationDTO {
   password: string;
 
   @IsString()
+  @IsNotEmpty()
+  invitationToken: string;
+
+  @IsString()
   @IsOptional()
   avatar?: string;
 }

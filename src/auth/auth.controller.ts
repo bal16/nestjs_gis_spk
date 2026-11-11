@@ -14,6 +14,7 @@ import { AuthService } from './auth.service';
 
 import { LoginDTO } from './dto/login.dto';
 import { RegistrationDTO } from './dto/registration.dto';
+import { ChangePasswordDTO } from './dto/change-password.dto';
 
 import { WebResponse } from '../common/responses/web.response';
 import { LoginUser } from './entities/login.entity';
@@ -78,6 +79,27 @@ export class AuthController {
     const user = await this.authService.getSession(email);
 
     return new WebResponse('Success', user, HttpStatus.OK);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  async changePassword(
+    @Req() request: CustomRequest,
+    @Body() changePasswordDto: ChangePasswordDTO,
+  ): Promise<WebResponse<boolean>> {
+    const { sub } = request.user;
+
+    const result = await this.authService.changePassword(
+      sub,
+      changePasswordDto,
+    );
+
+    return new WebResponse(
+      'Password changed successfully',
+      result,
+      HttpStatus.OK,
+    );
   }
 
   @UseGuards(AccessTokenGuard)

@@ -55,8 +55,19 @@ describe('BuildingModule', () => {
 
     prisma = app.get<PrismaService>(PrismaService);
 
-    // Register and login test user
-    await request(app.getHttpServer()).post('/auth/register').send(testUser);
+    // Register and login test user (as admin)
+    await prisma.invitationToken.create({
+      data: {
+        token: 'building-test-token',
+        role: 'admin',
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+      },
+    });
+
+    await request(app.getHttpServer()).post('/auth/register').send({
+      ...testUser,
+      invitationToken: 'building-test-token',
+    });
 
     const res = await request(app.getHttpServer())
       .post('/auth/login')
@@ -67,6 +78,7 @@ describe('BuildingModule', () => {
   });
 
   afterAll(async () => {
+    await prisma.invitationToken.deleteMany();
     await prisma.assessment.deleteMany();
     await prisma.building.deleteMany();
     await prisma.user.deleteMany();
