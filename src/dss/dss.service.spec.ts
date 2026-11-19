@@ -204,6 +204,15 @@ describe('DssService', () => {
   });
 
   describe('calculateAndSave', () => {
+    it('should throw when there are no buildings to calculate', async () => {
+      jest.spyOn(service, 'getWeights').mockResolvedValue([]);
+      mockBuildingService.findAllWithAssessments.mockResolvedValue([]);
+
+      await expect(service.calculateAndSave()).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('should calculate preferences and save run', async () => {
       const mockWeights = [
         {

@@ -118,6 +118,9 @@ export class DssService {
   async calculateAndSave() {
     const rawWeights = await this.getWeights();
     const alternatives = await this.buildingService.findAllWithAssessments();
+
+    this.assertHasBuildings(alternatives);
+
     const assessmentMatrix = this.mapBuildingsToAssessment(alternatives);
     const weights = rawWeights.flatMap(
       (w: WeightConfiguration & { subWeights?: WeightConfiguration[] }) =>
@@ -181,6 +184,12 @@ export class DssService {
     });
 
     return true;
+  }
+
+  private assertHasBuildings(alternatives: BuildingWithAssessment[]) {
+    if (alternatives.length === 0) {
+      throw new BadRequestException('Tidak ada data gedung untuk dihitung');
+    }
   }
 
   private mapBuildingsToAssessment(buildings: BuildingWithAssessment[]) {
