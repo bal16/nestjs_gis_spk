@@ -7,6 +7,33 @@ import { BadRequestException } from '@nestjs/common';
 import type { BatchUpdateWeightsDTO } from './dto/update-weights.dto';
 import type { BuildingWithAssessment } from '../common/type';
 
+const createAssessedBuilding = (): BuildingWithAssessment => ({
+  id: 'building-guard',
+  priority: 1,
+  name: 'Guard Building',
+  score: 0,
+  latitude: 0,
+  longitude: 0,
+  code: 'E99',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  assessments: [
+    {
+      id: 'assessment-guard',
+      buildingId: 'building-guard',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      age: 10,
+      structure: 3,
+      architecture: 3,
+      mep: 3,
+      utility: 200,
+      damage: 2,
+      lastMaintenance: new Date(),
+    },
+  ],
+});
+
 describe('DssService', () => {
   let service: DssService;
   let mockPrismaService: DeepMockProxy<PrismaService>;
@@ -207,6 +234,36 @@ describe('DssService', () => {
     it('should throw when there are no buildings to calculate', async () => {
       jest.spyOn(service, 'getWeights').mockResolvedValue([]);
       mockBuildingService.findAllWithAssessments.mockResolvedValue([]);
+
+      await expect(service.calculateAndSave()).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw when weights are not configured', async () => {
+      jest.spyOn(service, 'getWeights').mockResolvedValue([]);
+      mockBuildingService.findAllWithAssessments.mockResolvedValue([
+        createAssessedBuilding(),
+      ]);
+
+      await expect(service.calculateAndSave()).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw when total weight is not 1.0', async () => {
+      jest.spyOn(service, 'getWeights').mockResolvedValue([
+        {
+          key: 'c1',
+          name: 'Age',
+          type: 'benefit',
+          value: 0.5,
+          subWeightFrom: null,
+        },
+      ]);
+      mockBuildingService.findAllWithAssessments.mockResolvedValue([
+        createAssessedBuilding(),
+      ]);
 
       await expect(service.calculateAndSave()).rejects.toThrow(
         BadRequestException,

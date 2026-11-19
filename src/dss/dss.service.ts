@@ -120,6 +120,7 @@ export class DssService {
     const alternatives = await this.buildingService.findAllWithAssessments();
 
     this.assertHasBuildings(alternatives);
+    this.assertHasValidWeights(rawWeights);
 
     const assessmentMatrix = this.mapBuildingsToAssessment(alternatives);
     const weights = rawWeights.flatMap(
@@ -189,6 +190,23 @@ export class DssService {
   private assertHasBuildings(alternatives: BuildingWithAssessment[]) {
     if (alternatives.length === 0) {
       throw new BadRequestException('Tidak ada data gedung untuk dihitung');
+    }
+  }
+
+  private assertHasValidWeights(rawWeights: WeightConfigurationEntity[]) {
+    if (rawWeights.length === 0) {
+      throw new BadRequestException('Bobot kriteria belum dikonfigurasi');
+    }
+
+    const totalWeight = rawWeights.reduce(
+      (sum, weight) => sum + weight.value,
+      0,
+    );
+
+    if (Math.abs(totalWeight - 1) > 0.0001) {
+      throw new BadRequestException(
+        `Total bobot kriteria harus 1.0 (Sekarang: ${totalWeight})`,
+      );
     }
   }
 
