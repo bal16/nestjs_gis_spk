@@ -11,9 +11,16 @@ export class BuildingEntity {
   createdAt: Date;
   updatedAt: Date;
   assessments?: AssessmentEntity[];
+  assessmentCount?: number;
 
-  constructor(partial: Partial<BuildingEntity>) {
-    Object.assign(this, partial);
+  constructor(
+    partial: Partial<BuildingEntity> & { _count?: { assessments: number } },
+  ) {
+    const { _count, ...rest } = partial;
+    Object.assign(this, rest);
+    if (_count) {
+      this.assessmentCount = _count.assessments;
+    }
     if (partial.assessments) {
       this.assessments = partial.assessments.map(
         (a) => new AssessmentEntity(a),
