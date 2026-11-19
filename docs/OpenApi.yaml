@@ -342,6 +342,11 @@ components:
           nullable: true
           description: "Priority tier: 1 (low), 2 (medium), 3 (high)"
           example: 3
+        assessmentCount:
+          type: integer
+          minimum: 0
+          description: Number of assessments for this building (list endpoint only)
+          example: 2
         createdAt:
           type: string
           format: date-time
@@ -1201,9 +1206,9 @@ paths:
     get:
       summary: List all buildings (Public)
       description: |
-        Returns all buildings including their latest assessment data and the most recent
+        Returns all buildings with their assessment count and the most recent
         SAW run detail. **This endpoint is public and does not require authentication.**
-        The response includes nested `assessments` and `sawRunDetails` (latest 1 per building).
+        The response includes `assessmentCount` and `sawRunDetails` (latest 1 per building).
       tags: [Buildings]
       responses:
         '200':
@@ -1231,7 +1236,7 @@ paths:
                     longitude: 110.409876
                     score: 0.875
                     priority: 3
-                    assessments: []
+                    assessmentCount: 0
                     sawRunDetails: []
 
     post:
