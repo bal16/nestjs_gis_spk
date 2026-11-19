@@ -64,10 +64,12 @@ describe('BuildingModule', () => {
       },
     });
 
-    await request(app.getHttpServer()).post('/auth/register').send({
-      ...testUser,
-      invitationToken: 'building-test-token',
-    });
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        ...testUser,
+        invitationToken: 'building-test-token',
+      });
 
     const res = await request(app.getHttpServer())
       .post('/auth/login')

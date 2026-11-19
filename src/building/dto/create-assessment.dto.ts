@@ -39,4 +39,3 @@ export class CreateAssessmentDTO {
   @IsDateString()
   lastMaintenance?: string;
 }
-
