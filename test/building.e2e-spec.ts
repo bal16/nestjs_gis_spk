@@ -131,12 +131,15 @@ describe('BuildingModule', () => {
           .get('/buildings')
           .expect(200);
 
-        const body = res.body as WebResponse<Building[]>;
+        const body = res.body as WebResponse<
+          (Building & { assessmentCount?: number })[]
+        >;
         expect(Array.isArray(body.data)).toBe(true);
         expect(body.data.length).toBeGreaterThan(0);
-        expect(
-          body.data.some((b: Building) => b.code === testBuilding.code),
-        ).toBe(true);
+        const listed = body.data.find((b) => b.code === testBuilding.code);
+        expect(listed).toBeDefined();
+        expect(listed?.assessmentCount).toBe(0);
+        expect(listed).not.toHaveProperty('assessments');
       });
     });
 
@@ -222,6 +225,19 @@ describe('BuildingModule', () => {
             (a: Assessment) => a.id === createdAssessmentId,
           ),
         ).toBe(true);
+      });
+
+      it('should count the new assessment in the buildings list', async () => {
+        const res = await request(app.getHttpServer())
+          .get('/buildings')
+          .expect(200);
+
+        const body = res.body as WebResponse<
+          (Building & { assessmentCount?: number })[]
+        >;
+        const listed = body.data.find((b) => b.code === testBuilding.code);
+
+        expect(listed?.assessmentCount).toBe(1);
       });
     });
 
