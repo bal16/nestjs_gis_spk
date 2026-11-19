@@ -14,7 +14,9 @@ export class BuildingService {
   async findAll(): Promise<BuildingEntity[]> {
     const buildings = await this.prisma.building.findMany({
       include: {
-        assessments: true,
+        _count: {
+          select: { assessments: true },
+        },
         sawRunDetails: {
           orderBy: { sawRun: { executedAt: 'desc' } },
           take: 1,
