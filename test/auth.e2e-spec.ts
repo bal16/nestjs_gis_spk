@@ -306,7 +306,10 @@ describe('AuthModule', () => {
       return request(app.getHttpServer())
         .post('/auth/change-password')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send({ oldPassword: testUser.password, newPassword: testUser.password })
+        .send({
+          oldPassword: testUser.password,
+          newPassword: testUser.password,
+        })
         .expect(400);
     });
 
@@ -314,7 +317,10 @@ describe('AuthModule', () => {
       await request(app.getHttpServer())
         .post('/auth/change-password')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send({ oldPassword: testUser.password, newPassword: 'brandNewPassword123' })
+        .send({
+          oldPassword: testUser.password,
+          newPassword: 'brandNewPassword123',
+        })
         .expect(200);
 
       // Verify old password fails

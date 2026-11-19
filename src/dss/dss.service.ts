@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../infra/database/prisma.service';
 import { type BatchUpdateWeightsDTO } from './dto/update-weights.dto';
 import { BuildingService } from '../building/building.service';
-import type { WeightConfiguration } from 'src/generated/prisma/client';
+import type { Prisma, WeightConfiguration } from 'src/generated/prisma/client';
 import type { BuildingWithAssessment } from 'src/common/type';
 import { SawRunEntity } from './entities/saw-run.entity';
 import { WeightConfigurationEntity } from './entities/weight-configuration.entity';
@@ -118,6 +118,11 @@ export class DssService {
   async calculateAndSave() {
     const rawWeights = await this.getWeights();
     const alternatives = await this.buildingService.findAllWithAssessments();
+
+    this.assertHasBuildings(alternatives);
+    this.assertHasValidWeights(rawWeights);
+    this.assertAllBuildingsAssessed(alternatives);
+
     const assessmentMatrix = this.mapBuildingsToAssessment(alternatives);
     const weights = rawWeights.flatMap(
       (w: WeightConfiguration & { subWeights?: WeightConfiguration[] }) =>
@@ -157,7 +162,7 @@ export class DssService {
       data: {
         averageScore,
         totalBuildings,
-        snapshotWeights: rawWeights as any, // Menyimpan bobot saat ini sebagai history
+        snapshotWeights: rawWeights as unknown as Prisma.InputJsonValue, // Menyimpan bobot saat ini sebagai history
         executedAt: new Date(),
         sawRunDetails: {
           create: calculatedPreferences.map((result) => ({
@@ -181,6 +186,43 @@ export class DssService {
     });
 
     return true;
+  }
+
+  private assertHasBuildings(alternatives: BuildingWithAssessment[]) {
+    if (alternatives.length === 0) {
+      throw new BadRequestException('Tidak ada data gedung untuk dihitung');
+    }
+  }
+
+  private assertHasValidWeights(rawWeights: WeightConfigurationEntity[]) {
+    if (rawWeights.length === 0) {
+      throw new BadRequestException('Bobot kriteria belum dikonfigurasi');
+    }
+
+    const totalWeight = rawWeights.reduce(
+      (sum, weight) => sum + weight.value,
+      0,
+    );
+
+    if (Math.abs(totalWeight - 1) > 0.0001) {
+      throw new BadRequestException(
+        `Total bobot kriteria harus 1.0 (Sekarang: ${totalWeight})`,
+      );
+    }
+  }
+
+  private assertAllBuildingsAssessed(alternatives: BuildingWithAssessment[]) {
+    const unassessed = alternatives.filter(
+      (building) => building.assessments.length === 0,
+    );
+
+    if (unassessed.length > 0) {
+      throw new BadRequestException(
+        `Gedung berikut belum memiliki penilaian: ${unassessed
+          .map((building) => building.code)
+          .join(', ')}`,
+      );
+    }
   }
 
   private mapBuildingsToAssessment(buildings: BuildingWithAssessment[]) {

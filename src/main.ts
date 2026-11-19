@@ -36,7 +36,7 @@ async function bootstrap() {
   const openApiFilePath = path.join(process.cwd(), 'docs', 'OpenApi.yaml');
   if (fs.existsSync(openApiFilePath)) {
     const yamlFile = fs.readFileSync(openApiFilePath, 'utf8');
-    const openApiDocument = YAML.parse(yamlFile);
+    const openApiDocument = YAML.parse(yamlFile) as Record<string, unknown>;
 
     const { apiReference } = await import('@scalar/nestjs-api-reference');
     app.use(
@@ -52,5 +52,4 @@ async function bootstrap() {
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   await app.listen(port, '0.0.0.0');
 }
-bootstrap();
-
+void bootstrap();

@@ -52,10 +52,12 @@ describe('DssModule', () => {
       },
     });
 
-    await request(app.getHttpServer()).post('/auth/register').send({
-      ...testUser,
-      invitationToken: 'dss-test-token',
-    });
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        ...testUser,
+        invitationToken: 'dss-test-token',
+      });
     const res = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: testUser.email, password: testUser.password });
@@ -227,9 +229,7 @@ describe('DssModule', () => {
 
     describe('GET /dss/runs/latest & GET /dss/runs/lastest', () => {
       it('should reject unauthenticated requests', () => {
-        return request(app.getHttpServer())
-          .get('/dss/runs/latest')
-          .expect(401);
+        return request(app.getHttpServer()).get('/dss/runs/latest').expect(401);
       });
 
       it('should retrieve the latest run via primary endpoint /dss/runs/latest', async () => {

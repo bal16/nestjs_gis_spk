@@ -50,9 +50,8 @@ describe('InvitationModule (e2e)', () => {
       .post('/auth/login')
       .send({ email: 'admin@e2e.test', password: 'password123' });
 
-    adminToken = (
-      adminLoginRes.body as WebResponse<{ accessToken: string }>
-    ).data.accessToken;
+    adminToken = (adminLoginRes.body as WebResponse<{ accessToken: string }>)
+      .data.accessToken;
 
     // 2. Create regular user
     await prisma.invitationToken.create({
