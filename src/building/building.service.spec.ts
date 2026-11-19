@@ -77,6 +77,36 @@ describe('BuildingService', () => {
       //   },
       // });
     });
+
+    it('should expose assessment count and omit raw prisma count', async () => {
+      mockPrismaService.building.findMany.mockResolvedValue([
+        {
+          ...mockBuilding,
+          _count: { assessments: 2 },
+          sawRunDetails: [],
+        } as never,
+      ]);
+
+      const result = await service.findAll();
+
+      expect(result[0]).toHaveProperty('assessmentCount', 2);
+      expect(result[0]).not.toHaveProperty('_count');
+      expect(result[0].assessments).toBeUndefined();
+    });
+
+    it('should default assessment count to zero', async () => {
+      mockPrismaService.building.findMany.mockResolvedValue([
+        {
+          ...mockBuilding,
+          _count: { assessments: 0 },
+          sawRunDetails: [],
+        } as never,
+      ]);
+
+      const result = await service.findAll();
+
+      expect(result[0]).toHaveProperty('assessmentCount', 0);
+    });
   });
 
   describe('findAllWithAssessment', () => {

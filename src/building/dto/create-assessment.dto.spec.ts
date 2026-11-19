@@ -1,3 +1,4 @@
+import { validate } from 'class-validator';
 import { CreateAssessmentDTO } from './create-assessment.dto';
 
 describe('CreateAssessmentDTO', () => {
@@ -46,5 +47,48 @@ describe('CreateAssessmentDTO', () => {
 
     expect(basicAssessment.buildingId).toBeUndefined();
     expect(basicAssessment.lastMaintenance).toBeUndefined();
+  });
+
+  it('should validate when lastMaintenance is omitted', async () => {
+    const dto = Object.assign(new CreateAssessmentDTO(), {
+      age: 5,
+      structure: 95,
+      architecture: 90,
+      mep: 92,
+      utility: 88,
+      damage: 2,
+    });
+
+    expect(await validate(dto)).toHaveLength(0);
+  });
+
+  it('should validate a valid lastMaintenance date', async () => {
+    const dto = Object.assign(new CreateAssessmentDTO(), {
+      age: 5,
+      structure: 95,
+      architecture: 90,
+      mep: 92,
+      utility: 88,
+      damage: 2,
+      lastMaintenance: '2023-10-01T00:00:00.000Z',
+    });
+
+    expect(await validate(dto)).toHaveLength(0);
+  });
+
+  it('should reject an invalid lastMaintenance date', async () => {
+    const dto = Object.assign(new CreateAssessmentDTO(), {
+      age: 5,
+      structure: 95,
+      architecture: 90,
+      mep: 92,
+      utility: 88,
+      damage: 2,
+      lastMaintenance: 'not-a-date',
+    });
+
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].property).toBe('lastMaintenance');
   });
 });
