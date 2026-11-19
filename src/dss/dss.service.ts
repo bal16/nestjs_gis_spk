@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../infra/database/prisma.service';
 import { type BatchUpdateWeightsDTO } from './dto/update-weights.dto';
 import { BuildingService } from '../building/building.service';
-import type { WeightConfiguration } from 'src/generated/prisma/client';
+import type { Prisma, WeightConfiguration } from 'src/generated/prisma/client';
 import type { BuildingWithAssessment } from 'src/common/type';
 import { SawRunEntity } from './entities/saw-run.entity';
 import { WeightConfigurationEntity } from './entities/weight-configuration.entity';
@@ -162,7 +162,7 @@ export class DssService {
       data: {
         averageScore,
         totalBuildings,
-        snapshotWeights: rawWeights as any, // Menyimpan bobot saat ini sebagai history
+        snapshotWeights: rawWeights as unknown as Prisma.InputJsonValue, // Menyimpan bobot saat ini sebagai history
         executedAt: new Date(),
         sawRunDetails: {
           create: calculatedPreferences.map((result) => ({
