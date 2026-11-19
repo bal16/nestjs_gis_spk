@@ -270,6 +270,31 @@ describe('DssService', () => {
       );
     });
 
+    it('should throw when a building has no assessment', async () => {
+      jest.spyOn(service, 'getWeights').mockResolvedValue([
+        {
+          key: 'c1',
+          name: 'Age',
+          type: 'benefit',
+          value: 1,
+          subWeightFrom: null,
+        },
+      ]);
+      mockBuildingService.findAllWithAssessments.mockResolvedValue([
+        createAssessedBuilding(),
+        {
+          ...createAssessedBuilding(),
+          id: 'building-no-assessment',
+          code: 'E00',
+          assessments: [],
+        },
+      ]);
+
+      await expect(service.calculateAndSave()).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('should calculate preferences and save run', async () => {
       const mockWeights = [
         {
@@ -323,18 +348,6 @@ describe('DssService', () => {
       ];
 
       const mockAlternatives: BuildingWithAssessment[] = [
-        {
-          id: 'building-no-assessment',
-          priority: 1,
-          name: 'Building without assessment',
-          score: 0,
-          latitude: 0,
-          longitude: 0,
-          code: 'E00',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          assessments: [],
-        },
         {
           id: 'building-1',
           priority: 0,

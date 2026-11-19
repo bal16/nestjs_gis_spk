@@ -121,6 +121,7 @@ export class DssService {
 
     this.assertHasBuildings(alternatives);
     this.assertHasValidWeights(rawWeights);
+    this.assertAllBuildingsAssessed(alternatives);
 
     const assessmentMatrix = this.mapBuildingsToAssessment(alternatives);
     const weights = rawWeights.flatMap(
@@ -206,6 +207,20 @@ export class DssService {
     if (Math.abs(totalWeight - 1) > 0.0001) {
       throw new BadRequestException(
         `Total bobot kriteria harus 1.0 (Sekarang: ${totalWeight})`,
+      );
+    }
+  }
+
+  private assertAllBuildingsAssessed(alternatives: BuildingWithAssessment[]) {
+    const unassessed = alternatives.filter(
+      (building) => building.assessments.length === 0,
+    );
+
+    if (unassessed.length > 0) {
+      throw new BadRequestException(
+        `Gedung berikut belum memiliki penilaian: ${unassessed
+          .map((building) => building.code)
+          .join(', ')}`,
       );
     }
   }
